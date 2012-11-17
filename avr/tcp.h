@@ -84,6 +84,7 @@ struct tcpconnection
 	uint32_t next_seq_num;
 	uint32_t seq_num; //The values on our /send to foreign/ - use this when we receive an ack.
 	uint32_t ack_num; //The values on our /receive from foreign/
+	uint8_t  remote_mac[6];
 
 //For sending
 	uint8_t time_since_sent; //if zero, then no packets are pending, if nonzero, it counts up.

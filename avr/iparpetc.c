@@ -220,7 +220,7 @@ void enc424j600_receivecallback( uint16_t packetlen )
 
 	if( POP != 0x45 )
 	{
-		sendstr( "conf. hdr\n" );
+//		sendstr( "CFH\n" );
 		return;
 	}
 

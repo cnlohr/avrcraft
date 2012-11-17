@@ -18,6 +18,7 @@ struct tcpconnection TCPs[TCP_SOCKETS];
 #define POP16 enc424j600_pop16()
 #define PUSH(x) enc424j600_push8(x)
 #define PUSH16(x) enc424j600_push16(x)
+#define PUSHB(x,s) enc424j600_pushblob(x,s)
 
 //Consider putting these in the core stack.
 static uint32_t POP32()
@@ -58,7 +59,12 @@ static void write_tcp_header( uint8_t c )
 	struct tcpconnection * t = &TCPs[c];
 
 	enc424j600_startsend( t->sendptr );
-	send_etherlink_header( 0x0800 );
+
+//We cannot send etherlink header otherwise we may misdirect our packets.
+//	send_etherlink_header( 0x0800 );
+	PUSHB( t->remote_mac, 6 );
+	PUSH16( 0x0800 );
+
 	send_ip_header( 0x00, (const uint8_t *)&t->dest_addr, TCP_PROTOCOL_NUMBER ); //Size, etc. will be filled into IP header later.
 	PUSH16( t->this_port );
 	PUSH16( t->dest_port );
@@ -69,11 +75,22 @@ static void write_tcp_header( uint8_t c )
 	PUSH( t->sendtype );
 
 //	PUSH16( (MAX_FRAMELEN-52) ); //window
-	PUSH16( (8192) );
+	PUSH16( 2048 ); //window
+//	PUSH16( (8192) );
 
 	PUSH16( 0x0000 ); //checksum
 
 	PUSH16( 0x0000 ); //Urgent (no)
+}
+
+static void UpdateRemoteMAC( uint8_t * c )
+{
+	c[0] = macfrom[0];
+	c[1] = macfrom[1];
+	c[2] = macfrom[2];
+	c[3] = macfrom[3];
+	c[4] = macfrom[4];
+	c[5] = macfrom[5];
 }
 
 //////////////////////////EXTERNAL CALLABLE FUNCTIONS//////////////////////////
@@ -116,6 +133,8 @@ void HandleTCP(uint16_t iptotallen)
 		if( rsck == 0 ) goto reset_conn0;
 		t = &TCPs[rsck];
 
+		UpdateRemoteMAC( t->remote_mac );
+
 		t->this_port = localport;
 		t->dest_port = remoteport;
 		t->dest_addr = *((uint32_t*)ipsource);
@@ -140,6 +159,8 @@ void HandleTCP(uint16_t iptotallen)
 	}
 #endif
 
+	UpdateRemoteMAC( t->remote_mac );
+
 	//If we don't have a real connection, we're going to have to bail here.
 	if( !rsck )
 	{
@@ -149,8 +170,8 @@ void HandleTCP(uint16_t iptotallen)
 	if( flags & RSTBIT)
 	{
 		TCPConnectionClosing( rsck );
-		TCPs[rsck].sendtype = RSTBIT | ACKBIT;
-		TCPs[rsck].state = 0;
+		t->sendtype = RSTBIT | ACKBIT;
+		t->state = 0;
 		goto send_early;
 	}
 
@@ -326,7 +347,6 @@ uint8_t TCPCanSend( uint8_t c )
 
 void StartTCPWrite( uint8_t c )
 {
-
 	write_tcp_header( c );
 }
 
@@ -339,7 +359,7 @@ void EndTCPWrite( uint8_t c, uint8_t is_retransmit )
 	unsigned short base = t->sendptr;
 
 	//Done.  Load 'er up and send 'er out.
-	//XXX TODO FIX THIS
+	//XXX TODO FIX THIS -> is_retransmit proabbly isn't the right way to handle this.  Just call the needed functions and get rid of it?
 
 	enc424j600_stopop();
 
