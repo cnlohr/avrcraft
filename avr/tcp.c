@@ -218,7 +218,7 @@ void HandleTCP(uint16_t iptotallen)
 	{
 		if( t->ack_num == sequence_num )
 		{
-			t->ack_num = sequence_num;   //XXX TODO remove this?
+			//t->ack_num = sequence_num;   //XXX TODO remove this?
 			if( iptotallen > 0 )
 			{
 				t->ack_num += iptotallen;
@@ -272,7 +272,7 @@ send_early: //This requires a RST to be sent back.
 	}
 	write_tcp_header( rsck );
 end_and_emit:
-	EndTCPWrite( rsck, 0 );
+	EndTCPWrite( rsck );
 	//EmitTCP( rsck );
 }
 
@@ -314,8 +314,7 @@ void TickTCP()
 
 		if( t->time_since_sent > TCP_TICKS_BEFORE_RESEND )
 		{
-			StartTCPWrite( i );
-			EndTCPWrite( i, 1 );  //Mark as re-transmit, this will update any of the needed fields on xmit.
+			enc424j600_xmitpacket( t->sendptr, t->sendlength );
 
 			t->time_since_sent = 1;
 			if( t->retries++ > TCP_MAX_RETRIES )
@@ -336,7 +335,7 @@ void RequestClosure( uint8_t c )
 	TCPs[c].time_since_sent = 0;
 //	TCPs[c].seq_num--; //???
 	StartTCPWrite( c );
-	EndTCPWrite( c, 0 );	
+	EndTCPWrite( c );	
 }
 
 
@@ -350,7 +349,7 @@ void StartTCPWrite( uint8_t c )
 	write_tcp_header( c );
 }
 
-void EndTCPWrite( uint8_t c, uint8_t is_retransmit )
+void EndTCPWrite( uint8_t c )
 {
 	uint16_t ppl, ppl2;
 	struct tcpconnection * t = &TCPs[c];
@@ -358,36 +357,23 @@ void EndTCPWrite( uint8_t c, uint8_t is_retransmit )
 	unsigned short payloadlen;
 	unsigned short base = t->sendptr;
 
-	//Done.  Load 'er up and send 'er out.
-	//XXX TODO FIX THIS -> is_retransmit proabbly isn't the right way to handle this.  Just call the needed functions and get rid of it?
-
 	enc424j600_stopop();
 
-	if( is_retransmit )
-	{
-		length = t->sendlength;
-	}
-	else
-	{
-		length = enc424j600_get_write_length();
-		t->sendlength = length;
-	}
+	length = enc424j600_get_write_length();
+	t->sendlength = length;
 
 	payloadlen = length - 34 - 20;
 
-	if( !is_retransmit )
+	//Expecting an ACK.
+	if( t->sendtype & ( PSHBIT | SYNBIT | FINBIT ) ) //PSH, SYN, RST or FIN packets
 	{
-		//Expecting an ACK.
-		if( t->sendtype & ( PSHBIT | SYNBIT | FINBIT ) ) //PSH, SYN, RST or FIN packets
-		{
-			t->time_since_sent = 1;
-			t->retries = 0;
+		t->time_since_sent = 1;
+		t->retries = 0;
 
-			if( payloadlen == 0)
-				t->next_seq_num = t->seq_num + 1;               //SEQ NUM
-			else
-				t->next_seq_num += payloadlen;   //SEQ NUM
-		}
+		if( payloadlen == 0)
+			t->next_seq_num = t->seq_num + 1;               //SEQ NUM
+		else
+			t->next_seq_num += payloadlen;   //SEQ NUM
 	}
 
 	//Write length in IP header
@@ -406,15 +392,8 @@ void EndTCPWrite( uint8_t c, uint8_t is_retransmit )
 	enc424j600_alter_word( 0x2C, ppl2 );
 
 	//XXX: TODO: Should there even be an IF statement here?  Shouldn't we be using xmitpacket?
-	if( !is_retransmit )
-	{
-		enc424j600_endsend( length );
-	}
-	else
-	{
-		//We are re-transmitting so we have to hoke with the data
-		 enc424j600_xmitpacket( t->sendptr, length );
-	}
+
+	enc424j600_endsend( length );
 }
 
 void EmitTCP( uint8_t c )

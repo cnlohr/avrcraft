@@ -57,7 +57,7 @@ uint8_t TCPCanSend( uint8_t c );
 //Initialize a TCP socket write
 void StartTCPWrite( uint8_t c );
 //End a TCP socket write. This computes checksum, length, etc. information
-void EndTCPWrite( uint8_t c, uint8_t is_retransmit );
+void EndTCPWrite( uint8_t c );
 //this emits a stored and written TCP datagram
 void EmitTCP( uint8_t );
 

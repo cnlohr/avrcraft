@@ -159,7 +159,7 @@ void EndSend( )  //DUMBCRAFT
 	}
 	else
 	{
-		EndTCPWrite( lastconnection, 0 );
+		EndTCPWrite( lastconnection );
 		//EmitTCP( lastconnection );
 	}
 }
@@ -271,7 +271,7 @@ void HTTPCustomCallback( uint8_t conn )
 		TCPs[conn].sendtype = ACKBIT | PSHBIT;
 		StartTCPWrite( conn );
 		PushStr( "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\nFile not found." );
-		EndTCPWrite( conn, 0 );
+		EndTCPWrite( conn );
 		h->isdone = 1;
 		return;
 	}
@@ -300,7 +300,7 @@ void HTTPCustomCallback( uint8_t conn )
 		}
 
 		PushStr( "\r\n\r\n" );
-		EndTCPWrite( conn, 0 );
+		EndTCPWrite( conn );
 		h->isfirst = 0;
 		return;
 	}
@@ -315,7 +315,7 @@ void HTTPCustomCallback( uint8_t conn )
 	}
 
 	EndReadFAT();
-	EndTCPWrite( conn, 0 );
+	EndTCPWrite( conn );
 
 	h->bytesleft -= bytestoread;
 
