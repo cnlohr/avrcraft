@@ -391,8 +391,6 @@ void EndTCPWrite( uint8_t c )
 	ppl2 = enc424j600_get_checksum();
 	enc424j600_alter_word( 0x2C, ppl2 );
 
-	//XXX: TODO: Should there even be an IF statement here?  Shouldn't we be using xmitpacket?
-
 	enc424j600_endsend( length );
 }
 

@@ -74,14 +74,14 @@ typedef enum {
 	TIME_WAIT,
 } connection_state;
 
-//Size is <32 bytes (keep it that way)
+//Size is 36 bytes (try to keep this as low as possible)
 struct tcpconnection
 {
 	connection_state state;
 	uint16_t this_port;
 	uint16_t dest_port;
 	uint32_t dest_addr;
-	uint32_t next_seq_num;
+	uint32_t next_seq_num; //We use this to pre-compute the next sequence number.  We could theoretically calculate this on-the-fly? (try optimizing?)
 	uint32_t seq_num; //The values on our /send to foreign/ - use this when we receive an ack.
 	uint32_t ack_num; //The values on our /receive from foreign/
 	uint8_t  remote_mac[6];
@@ -93,7 +93,7 @@ struct tcpconnection
 	uint8_t sendtype; //TCP Flags section
 
 	//Send pointer?
-	uint16_t sendptr; //On the actual device
+	uint16_t sendptr; //On the enc424j600
 	uint16_t sendlength;
 };
 
