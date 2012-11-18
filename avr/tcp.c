@@ -391,7 +391,7 @@ void EndTCPWrite( uint8_t c )
 	ppl2 = enc424j600_get_checksum();
 	enc424j600_alter_word( 0x2C, ppl2 );
 
-	enc424j600_endsend( length );
+	enc424j600_endsend( );
 }
 
 void EmitTCP( uint8_t c )

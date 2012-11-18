@@ -191,7 +191,7 @@ void enc424j600_startsend( uint16_t baseaddress)
 	//Send away!
 }
 
-void enc424j600_endsend( uint16_t length )
+void enc424j600_endsend( )
 {
 	uint16_t i;
 	uint16_t es;
