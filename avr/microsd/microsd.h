@@ -7,9 +7,13 @@
 
 #include <stdint.h>
 
-#define SDMISO _BV( 5 )
-#define SDCLK  _BV( 6 )
-#define SDMOSI _BV( 7 )
+#define SDMISOP 5
+#define SDCLKP  6
+#define SDMOSIP 7
+
+#define SDMISO _BV( SDMISOP )
+#define SDCLK  _BV( SDCLKP )
+#define SDMOSI _BV( SDMOSIP )
 #define SDPORT PORTD
 #define SDPIN  PIND
 #define SDDDR  DDRD

@@ -83,15 +83,15 @@ uint8_t TCPReceiveSyn( uint16_t portno )
 		sendstr( "Conn attempt: " );
 		sendhex2( ret );
 		sendchr( '\n' );
-		AddPlayer( ret  - HTTP_CONNECTIONS );
+		AddPlayer( ret - HTTP_CONNECTIONS - 1 );
 		return ret;
 	}
 #ifndef NO_HTTP
 	else if( portno == 80 )
 	{
-		uint8_t ret = MyGetFreeConnection(1, HTTP_CONNECTIONS );
+		uint8_t ret = MyGetFreeConnection(1, HTTP_CONNECTIONS+1 );
 //		sendchr( 0 ); sendchr( 'x' ); sendhex2( ret );
-		HTTPInit( ret );
+		HTTPInit( ret-1, ret );
 		return ret;
 	}
 #endif
@@ -103,12 +103,12 @@ void TCPConnectionClosing( uint8_t conn )
 	if( conn >= HTTP_CONNECTIONS )
 	{
 		sendstr( "Lostconn\n" );
-		RemovePlayer( conn - HTTP_CONNECTIONS );
+		RemovePlayer( conn - HTTP_CONNECTIONS - 1 );
 	}
 #ifndef NO_HTTP
 	else
 	{
-		HTTPClose( conn );
+		HTTPClose( conn-1 );
 	}
 #endif
 }
@@ -117,13 +117,13 @@ uint8_t disable;
 
 uint8_t CanSend( uint8_t playerno ) //DUMBCRAFT
 {
-	return TCPCanSend( playerno + HTTP_CONNECTIONS );
+	return TCPCanSend( playerno + HTTP_CONNECTIONS + 1 );
 }
 
 void SendStart( uint8_t playerno )  //DUMBCRAFT
 {
 	bytespushed = 0;
-	lastconnection = playerno + HTTP_CONNECTIONS;
+	lastconnection = playerno + HTTP_CONNECTIONS + 1;
 	disable = 0;
 }
 
@@ -185,17 +185,17 @@ uint8_t CanRead()  //DUMBCRAFT
 
 uint8_t TCPReceiveData( uint8_t connection, uint16_t totallen ) 
 {
-	if( connection >= HTTP_CONNECTIONS ) //DUMBCRAFT
+	if( connection > HTTP_CONNECTIONS ) //DUMBCRAFT
 	{
 		totaldatalen = totallen;
 		readsofar = 0;
-		GotData( connection -  HTTP_CONNECTIONS );
+		GotData( connection -  HTTP_CONNECTIONS - 1 );
 		return 0; //Do this if we didn't send an ack.
 	}
 #ifndef NO_HTTP
 	else
 	{
-		HTTPGotData( connection, totallen );
+		HTTPGotData( connection-1, totallen );
 		return 0;
 	}
 #endif
@@ -212,16 +212,29 @@ uint8_t TCPReceiveData( uint8_t connection, uint16_t totallen )
 
 #ifndef NO_HTTP
 
-/*
-void HTTPCustomStart( uint8_t conn )
+void HTTPCustomStart( )
 {
-	HTTPConnections[conn].is404 = 1;
+	//curhttp->is404 = 1;
+	curhttp->bytesleft = 0xffffffff;
 }
 
-void HTTPCustomCallback( uint8_t conn )
+void HTTPCustomCallback( )
 {
-	//Err... this should't be called.
-}*/
+	uint8_t i = 0;
+	if( curhttp->isfirst || curhttp->is404 || curhttp->isdone )
+	{
+		HTTPHandleInternalCallback();
+		return;
+	}
+
+	StartTCPWrite( curhttp->socket );
+	do
+	{
+		enc424j600_push8( 0 );
+		enc424j600_push8( 0xff );
+	} while( ++i );
+	EndTCPWrite( curhttp->socket );
+}
 
 #endif
 
@@ -290,15 +303,16 @@ int main( void )
 
 		UpdateServer();
 
+#ifndef NO_HTTP
+			HTTPTick();
+#endif
+
 		if( TIFR2 & _BV(TOV2) )
 		{
 			TIFR2 |= _BV(TOV2);
 			sendchr( 0 );
 
 			TickTCP();
-#ifndef NO_HTTP
-			HTTPTick();
-#endif
 
 			delayctr++;
 			if( delayctr==10 )

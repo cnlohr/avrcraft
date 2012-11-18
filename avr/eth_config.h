@@ -81,7 +81,7 @@
 //
 //NOTE: Packet #0 is a reserved packet, it is used for
 //temporary actions
-#define TCP_SOCKETS 6
+#define TCP_SOCKETS 10
 #define TCP_MAX_RETRIES 40
 
 //500 ms (cannot be more than 254 (or 2.54s))
@@ -91,7 +91,7 @@
 //Additional applications
 #define INCLUDE_HTTP_SERVER
 #define HTTP_SERVER_TIMEOUT (10000) 
-#define HTTP_CONNECTIONS 3
+#define HTTP_CONNECTIONS 6
 
 
 #ifndef ASSEMBLY

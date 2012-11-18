@@ -4,6 +4,7 @@
 #define _HTTP_H
 
 #include <stdint.h>
+#include "basicfat.h"
 #include "eth_config.h"
 
 #ifdef INCLUDE_HTTP_SERVER
@@ -19,16 +20,21 @@
 */
 #define MAX_PATHLEN 38
 
+
 //You must call:
-void HTTPInit( uint8_t id );
+void HTTPInit(uint8_t id, uint8_t socket );
 void HTTPGotData( uint8_t id, uint16_t len );
-void HTTPClose( uint8_t id );
+void HTTPClose( ); //Must be called from within an HTTP Callback.
 void HTTPTick();
 
+extern struct HTTPConnection * curhttp;
 
 //You must provide:
-void HTTPCustomStart( uint8_t id );
-void HTTPCustomCallback( uint8_t id );  //called when we can send more data
+void HTTPCustomStart( );
+void HTTPCustomCallback( );  //called when we can send more data
+
+//You may call this from a custom callback.
+void HTTPHandleInternalCallback(  );
 
 #define TCP_STATE_NONE        0
 #define TCP_STATE_WAIT_METHOD 1
@@ -49,13 +55,16 @@ struct HTTPConnection
 	uint8_t  is_dynamic:1;
 	uint16_t timeout;
 
-	int32_t clusterno;
+	struct FileInfo filedescriptor;
+
 	uint32_t bytesleft;
 	uint32_t bytessofar;
 
 	uint8_t  is404:1;
 	uint8_t  isdone:1;
 	uint8_t  isfirst:1;
+
+	uint8_t  socket;
 } HTTPConnections[HTTP_CONNECTIONS];
 
 #endif

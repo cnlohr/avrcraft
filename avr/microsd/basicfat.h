@@ -47,6 +47,13 @@ uint32_t ClusterToSector( int32_t cluster );
 //begin a read
 unsigned char StartReadFAT( struct FileInfo * fi );
 
+//Sector aligned, you must read exactly and only one sector using the SD card functions, not FAT functions
+//This function is used for performance purposes when you know you'll be reading exactly 512 bytes of ram.
+//You must call AdvanceSector when done.
+unsigned char StartReadFAT_SA( struct FileInfo * fi );  
+void FATAdvanceSector();  //Only call this if you are using ReadFAT_SA
+
+
 uint8_t  read8FAT();
 uint16_t read16LEFAT();
 uint32_t read32LEFAT();

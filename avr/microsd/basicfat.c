@@ -253,7 +253,23 @@ unsigned char StartReadFAT( struct FileInfo * file )
 	return ret;
 }
 
-static void AdvanceSector()
+unsigned char StartReadFAT_SA( struct FileInfo * file )
+{
+	uint16_t i;
+
+	lastfile = file;
+	
+	uint8_t ret = startSDread( ClusterToSector( file->clusterno) + fat_partition_head + file->sectorno );
+	if( ret )
+	{
+		sendstr( "General fault starting card read.\n" );
+	}
+
+
+	return ret;
+}
+
+void FATAdvanceSector()
 {
 	lastfile->byteno = 0;
 	lastfile->sectorno++;
@@ -330,7 +346,7 @@ sendhex4( opsleftSD );*/
 	{
 		uint16_t i;
 		endSDread();
-		AdvanceSector();
+		FATAdvanceSector();
 		StartReadFAT( lastfile );
 	}
 

@@ -6,12 +6,13 @@
 #include <avr/delay.h>
 
 #define FAST_SPI
+#define MICROSD_ASM_SPI
 
 static unsigned char WaitFor( unsigned char c );  //Return 0 if OK, 1 if bad.
-//static unsigned char spiRW(unsigned char ins);
-static void spiW(unsigned char ins);
-static unsigned char spiR();
-static void spiD();
+//static unsigned char microSPIRW(unsigned char ins);
+void microSPIW(unsigned char ins);
+unsigned char microSPIR();
+void microSPID();
 static void reCS();
 
 short    		opsleftSD;
@@ -32,8 +33,8 @@ restart:
 	SDCSEN;
 	_delay_us(50);
 
-	spiW( 0x40 ); spiW( 0x00 ); spiW( 0x00 );
-	spiW( 0x00 ); spiW( 0x00 ); spiW( 0x95 );
+	microSPIW( 0x40 ); microSPIW( 0x00 ); microSPIW( 0x00 );
+	microSPIW( 0x00 ); microSPIW( 0x00 ); microSPIW( 0x95 );
 
 	if( WaitFor( 1 ) )
 	{
@@ -52,12 +53,12 @@ restart:
 	reCS();
 	//XXX Yucky work-around, we have to tell the host we support high-capacity cards.
 
-	spiW(0x48);    // CMD8
-	spiW(0x00);    //
-	spiW(0x00);
-	spiW(0x01);    // HVS
-	spiW(0xAA);    // test pattern
-	spiW(0x87);    // right checksum for CMD8
+	microSPIW(0x48);    // CMD8
+	microSPIW(0x00);    //
+	microSPIW(0x00);
+	microSPIW(0x01);    // HVS
+	microSPIW(0xAA);    // test pattern
+	microSPIW(0x87);    // right checksum for CMD8
 
 	dumpSD( 6 );
 
@@ -65,19 +66,19 @@ sendcmd1:
 
 	reCS();
 
-	spiW(0x77);    // CMD55
-	spiW(0x00);   
-	spiW(0x00);
-	spiW(0x00);
-	spiW(0x00);
+	microSPIW(0x77);    // CMD55
+	microSPIW(0x00);   
+	microSPIW(0x00);
+	microSPIW(0x00);
+	microSPIW(0x00);
 
 	dumpSD( 3 );
 
 	reCS();
 
 	//the 0x40 supposadly tells the card that not just SD, but SDHC is OK!
-	spiW( 0x69 ); spiW( 0x40 ); spiW( 0x00 );  //CMD41?
-	spiW( 0x00 ); spiW( 0x00 ); spiD();
+	microSPIW( 0x69 ); microSPIW( 0x40 ); microSPIW( 0x00 );  //CMD41?
+	microSPIW( 0x00 ); microSPIW( 0x00 ); microSPID();
 	//sendstr( "CK" );
 
 	if( WaitFor( 0 ) )
@@ -93,8 +94,8 @@ sendcmd1:
 	//Card is basically  set up!
 	reCS();
 
-	spiW( 0x50 ); spiW( 0x00 ); spiW( 0x00 );  //Use 512-byte block reads.  //CMD16
-	spiW( 0x02 ); spiW( 0x00 ); spiW( 0x01 );
+	microSPIW( 0x50 ); microSPIW( 0x00 ); microSPIW( 0x00 );  //Use 512-byte block reads.  //CMD16
+	microSPIW( 0x02 ); microSPIW( 0x00 ); microSPIW( 0x01 );
 
 	dumpSD(3);
 
@@ -102,10 +103,10 @@ sendcmd1:
 
 	//Check capacity (we don't know if we are using low or high capacity addressing mode)
 
-	spiW( 0x7a ); //CMD58 (read OCR)
+	microSPIW( 0x7a ); //CMD58 (read OCR)
 
 	dumpSD( 7 );
-	if( spiR() & 0x40 ) //TODO Should I make sure it's not 0xff?
+	if( microSPIR() & 0x40 ) //TODO Should I make sure it's not 0xff?
 	{
 		highcap = 1;
 	}
@@ -171,21 +172,21 @@ void testReadBlock()
 unsigned char startSDwrite( uint32_t address )
 {
 	SDCSDE;
-	spiD();
+	microSPID();
 	SDCSEN;
-	spiD();
+	microSPID();
 
 	if( !highcap ) address>>=9;
 
-	spiW( 0x40 + 24 );
-	spiW( address >> 24 );
-	spiW( address >> 16 );
-	spiW( address >> 8 );
-	spiW( address );
+	microSPIW( 0x40 + 24 );
+	microSPIW( address >> 24 );
+	microSPIW( address >> 16 );
+	microSPIW( address >> 8 );
+	microSPIW( address );
 
 	if( WaitFor( 0 ) ) return 1;
 
-	spiW( 0xFE ); //start sending block.
+	microSPIW( 0xFE ); //start sending block.
 
 	opsleftSD = 512;
 
@@ -194,7 +195,7 @@ unsigned char startSDwrite( uint32_t address )
 
 void pushSDwrite( unsigned char c )
 {
-	spiW( c );
+	microSPIW( c );
 	--opsleftSD;
 }
 
@@ -206,14 +207,14 @@ unsigned char endSDwrite()
 
 	dumpSD( opsleftSD );
 
-	spiD(); //CRCA
+	microSPID(); //CRCA
 
 	//XXX Warning, the 50us wait in this function could be too low.  if it's at 10,
 	//you will have write issues.
 	do
 	{
 		_delay_us(50);
-		cc = spiR();
+		cc = microSPIR();
 	}
 	while ( --timeout && cc == 0xff );
 
@@ -228,7 +229,7 @@ unsigned char endSDwrite()
 	}
 
 	//Wait for read to complete.
-	while( spiR() != 0xFF && timeout-- ) _delay_us(50);
+	while( microSPIR() != 0xFF && timeout-- ) _delay_us(50);
 
 	SDCSDE;
 	return 0;
@@ -243,16 +244,16 @@ unsigned char startSDread( uint32_t address )
 
 	if( !highcap ) address<<=9;
 
-	spiW( 0x51 ); //0x57 ); //was 51
-	spiW( address>>24 );
-	spiW( address>>16 );
-	spiW( address>>8 );
-	spiW( address );
-	spiD();
+	microSPIW( 0x51 ); //0x57 ); //was 51
+	microSPIW( address>>24 );
+	microSPIW( address>>16 );
+	microSPIW( address>>8 );
+	microSPIW( address );
+	microSPID();
 
-	spiD();
-	spiD();
-	status = spiR();
+	microSPID();
+	microSPID();
+	status = microSPIR();
 /*
 	sendchr( 0 ); sendchr( '$' ); sendhex2( status ); sendchr( '$' );
 	sendhex2( address>>24 );
@@ -276,7 +277,7 @@ unsigned char startSDread( uint32_t address )
 unsigned char popSDread()
 {
 	--opsleftSD;
-	return spiR();
+	return microSPIR();
 }
 
 void endSDread()
@@ -284,7 +285,7 @@ void endSDread()
 	dumpSD( opsleftSD + 3 );
 
 	SDCSDE;
-	spiD();
+	microSPID();
 }
 
 
@@ -301,7 +302,7 @@ static unsigned char WaitFor( unsigned char c )
 	unsigned char i = 250;
 	for( ; i; --i )
 	{
-		if( spiR( ) == c ) return 0;
+		if( microSPIR( ) == c ) return 0;
 	}
 	return 1;
 }
@@ -310,21 +311,151 @@ void dumpSD( short count )
 {
 	while( count-- > 0 )
 	{
-		spiD();
+		microSPID();
 	}
 }
 
 static void reCS()
 {
 	SDCSDE;
-	spiD();
+	microSPID();
 	SDCSEN;
-	spiD();
+	microSPID();
 }
 
 
+#ifdef MICROSD_ASM_SPI
 
-static unsigned char spiR()
+unsigned char __attribute__((naked)) microSPIR()
+{
+asm volatile( "\
+\n\t clr r24 \
+\n\t cbi %0, %2 \
+\n\t sbi %0, %2 \
+\n\t sbic %1, %3 \
+\n\t ori r24, 0x80 \
+\n\t cbi %0, %2 \
+\n\t sbi %0, %2 \
+\n\t sbic %1, %3 \
+\n\t ori r24, 0x40 \
+\n\t cbi %0, %2 \
+\n\t sbi %0, %2 \
+\n\t sbic %1, %3 \
+\n\t ori r24, 0x20 \
+\n\t cbi %0, %2 \
+\n\t sbi %0, %2 \
+\n\t sbic %1, %3 \
+\n\t ori r24, 0x10 \
+\n\t cbi %0, %2 \
+\n\t sbi %0, %2 \
+\n\t sbic %1, %3 \
+\n\t ori r24, 0x08 \
+\n\t cbi %0, %2 \
+\n\t sbi %0, %2 \
+\n\t sbic %1, %3 \
+\n\t ori r24, 0x04 \
+\n\t cbi %0, %2 \
+\n\t sbi %0, %2 \
+\n\t sbic %1, %3 \
+\n\t ori r24, 0x02 \
+\n\t cbi %0, %2 \
+\n\t sbi %0, %2 \
+\n\t sbic %1, %3 \
+\n\t ori r24, 0x01 \
+\n\t cbi %0, %2 \
+\n\t ret \n\t" : : "I" (_SFR_IO_ADDR(SDPORT)), "I" (_SFR_IO_ADDR(SDPIN)), "I" (SDCLKP), "I" (SDMISOP) );
+//r24 is automatically return; This is mostly a naked function.
+}
+
+void microSPIW(unsigned char ins)
+{
+asm volatile( "\
+\n\t cbi %1, %2\
+\n\t cbi %1, %3\
+\n\t sbrc %0, 7\
+\n\t sbi %1, %3\
+\n\t sbi %1, %2\
+\n\t cbi %1, %2\
+\n\t\
+\n\t cbi %1, %3\
+\n\t sbrc %0, 6\
+\n\t sbi %1, %3\
+\n\t sbi %1, %2\
+\n\t cbi %1, %2\
+\n\t\
+\n\t cbi %1, %3\
+\n\t sbrc %0, 5\
+\n\t sbi %1, %3\
+\n\t sbi %1, %2\
+\n\t cbi %1, %2\
+\n\t\
+\n\t cbi %1, %3\
+\n\t sbrc %0, 4\
+\n\t sbi %1, %3\
+\n\t sbi %1, %2\
+\n\t cbi %1, %2\
+\n\t\
+\n\t cbi %1, %3\
+\n\t sbrc %0, 3\
+\n\t sbi %1, %3\
+\n\t sbi %1, %2\
+\n\t cbi %1, %2\
+\n\t\
+\n\t cbi %1, %3\
+\n\t sbrc %0, 2\
+\n\t sbi %1, %3\
+\n\t sbi %1, %2\
+\n\t cbi %1, %2\
+\n\t\
+\n\t cbi %1, %3\
+\n\t sbrc %0, 1\
+\n\t sbi %1, %3\
+\n\t sbi %1, %2\
+\n\t cbi %1, %2\
+\n\t\
+\n\t cbi %1, %3\
+\n\t sbrc %0, 0\
+\n\t sbi %1, %3\
+\n\t sbi %1, %2\
+\n\t cbi %1, %2\
+\n\t" : : "r" (ins), "I" (_SFR_IO_ADDR(SDPORT)), "I" (SDCLKP), "I" (SDMOSIP) );
+}
+
+void __attribute__((naked)) microSPID()
+{
+asm volatile( "\
+\n\t cbi %0, %1\
+\n\t sbi %0, %2\
+\n\t sbi %0, %1\
+\n\t cbi %0, %1\
+\n\t\
+\n\t sbi %0, %1\
+\n\t cbi %0, %1\
+\n\t\
+\n\t sbi %0, %1\
+\n\t cbi %0, %1\
+\n\t\
+\n\t sbi %0, %1\
+\n\t cbi %0, %1\
+\n\t\
+\n\t sbi %0, %1\
+\n\t cbi %0, %1\
+\n\t\
+\n\t sbi %0, %1\
+\n\t cbi %0, %1\
+\n\t\
+\n\t sbi %0, %1\
+\n\t cbi %0, %1\
+\n\t\
+\n\t sbi %0, %1\
+\n\t cbi %0, %1\
+\n\t ret" : : "I" (_SFR_IO_ADDR(SDPORT)), "I" (SDCLKP), "I" (SDMOSIP) );
+}
+
+#else
+
+
+unsigned char microSPIR()
 {
 	unsigned char ret = 0;
 #ifndef FAST_SPI
@@ -376,8 +507,7 @@ static unsigned char spiR()
 #endif
 }
 
-
-static void spiW(unsigned char ins)
+void microSPIW(unsigned char ins)
 {
 #if defined( FAST_SPI )
 	SDPORT &= ~SDCLK;
@@ -422,7 +552,7 @@ static void spiW(unsigned char ins)
 #endif
 }
 
-static void spiD()
+void microSPID()
 {
 	unsigned char i;
 	SDPORT |= SDMOSI;
@@ -437,11 +567,15 @@ static void spiD()
 
 
 
+#endif
+
+
+
 
 /*
 
 //SPI operates on rising edge (try to improve performance of this function)
-static unsigned char spiRW(unsigned char ins)
+static unsigned char microSPIRW(unsigned char ins)
 {
 
 	unsigned char ret = 0;
