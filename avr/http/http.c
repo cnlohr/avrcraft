@@ -1,8 +1,20 @@
 #include "http.h"
 #include <tcp.h>
 #include <avr_print.h>
+#include <basicfat.h>
+#include <string.h>
+#include <util10.h>
+#include <avr/pgmspace.h>
 
 #ifdef INCLUDE_HTTP_SERVER
+
+//Before moving the HTTP over here aone 16328
+//After moving it was 16400... What a price we pay for prettyness of code.
+//hmm >:|
+//260/895
+//
+//102/895
+//But the size went up to 16,410
 
 #define POP enc424j600_pop8()
 
@@ -116,7 +128,7 @@ void HTTPTick()
 			{
 				if( h->is_dynamic )
 				{
-					HTTPCustomCallback( i );
+				//	HTTPCustomCallback( i );
 				}
 				else
 				{
@@ -136,18 +148,133 @@ void HTTPTick()
 
 }
 
-static void HTTPHandleInternalCallback( uint8_t i )
+
+static void PushStr( const char * msg )
 {
-	struct HTTPConnection * h = &HTTPConnections[i];
-//	sendstr( "Internal Handle HTTP\n" );
+	uint8_t r;
+
+	do
+	{
+		r = pgm_read_byte(msg++);
+		if( !r ) break;
+		enc424j600_push8( r );
+	} while( 1 );
+
+/*
+	do
+	{
+		r = *(msg++);
+		if( !r ) break;
+		enc424j600_push8( r );
+	} while( 1 );
+*/
 }
 
-static void InternalStartHTTP( uint8_t id )
+#define PSTRx PSTR
+
+struct FileInfo filedescriptors[HTTP_CONNECTIONS];
+
+static void HTTPHandleInternalCallback( uint8_t conn )
 {
-	struct HTTPConnection * h = &HTTPConnections[id];
+	uint16_t i, bytestoread;
+	struct HTTPConnection * h = &HTTPConnections[conn];
+
+	if( h->isdone )
+	{
+		HTTPClose( conn );
+		return;
+	}
+	if( h->is404 )
+	{
+		TCPs[conn].sendtype = ACKBIT | PSHBIT;
+		StartTCPWrite( conn );
+		PushStr( PSTRx("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\nFile not found.") );
+		EndTCPWrite( conn );
+		h->isdone = 1;
+		return;
+	}
+	if( h->isfirst )
+	{
+		char stto[10];
+		uint8_t slen = strlen( h->pathbuffer );
+		const char * k;
+		TCPs[conn].sendtype = ACKBIT | PSHBIT;
+		StartTCPWrite( conn );
+		//TODO: Content Length?  MIME-Type?
+		PushStr( PSTRx("HTTP/1.1 200 Ok\r\nConnection: close\r\nContent-Length: ") );
+		Uint32To10Str( stto, h->bytesleft );
+		enc424j600_pushblob( stto, strlen( stto ) );
+		PushStr( PSTRx( "\r\nContent-Type: " ) );
+		//Content-Type?
+		while( slen && ( h->pathbuffer[--slen] != '.' ) );
+		k = &h->pathbuffer[slen+1];
+		if( strcmp( k, "mp3" ) == 0 )
+		{
+			PushStr( PSTRx( "audio/mpeg3" ) );
+		}
+		else
+		{
+			PushStr( PSTRx( "text/html" ) );
+		}
+
+		PushStr( PSTRx( "\r\n\r\n" ) );
+		EndTCPWrite( conn );
+		h->isfirst = 0;
+		return;
+	}
+
+	StartTCPWrite( conn );
+	StartReadFAT( &filedescriptors[conn] );
+
+	bytestoread = ((h->bytesleft)>512)?512:h->bytesleft;
+	for( i = 0; i < bytestoread; i++ )
+	{
+		enc424j600_push8( read8FAT() );	
+	}
+
+	EndReadFAT();
+	EndTCPWrite( conn );
+
+	h->bytesleft -= bytestoread;
+
+	if( !h->bytesleft )
+		h->isdone = 1;
+
+}
+
+static void InternalStartHTTP( uint8_t conn )
+{
+	uint8_t i;
+	struct HTTPConnection * h = &HTTPConnections[conn];
+	const char * path = &h->pathbuffer[0];
+
+	if( h->pathbuffer[0] == '/' )
+		path++;
+
+	h->clusterno = FindClusterFileInDir( path, ROOT_CLUSTER, -1, &h->bytesleft );
+	h->bytessofar = 0;
+
+	sendchr( 0 );
+	sendstr( "Getting: " );
+	sendstr( path );
+	sendhex4( h->clusterno );
+	sendchr( '\n' );
+
+	if( h->clusterno < 0 )
+	{
+		h->is_dynamic = 1;
+//		HTTPCustomStart( conn );
+	}
+	else
+	{
+		InitFileStructure( &filedescriptors[conn], h->clusterno );
+		h->isfirst = 1;
+		h->isdone = 0;
+		h->is404 = 0;
+		h->is_dynamic = 0;
+	}
+
 //	sendstr( "Internal Start HTTP\n" );
-	h->is_dynamic = 1;
-	HTTPCustomStart( id );
 }
 
 

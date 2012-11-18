@@ -10,16 +10,21 @@ COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -Ihttp -Imicrosd -I..
 CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=28636000UL -DMUTE_PRINTF #-DNO_HTTP #-Wall  
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c
+EXTRA_LD_FLAGS=-Wl,--relax -Wa,-a,-ad -Wl,-Map,program.map -mcall-prologues 
 
-program.elf : $(OBJS)
-	avr-gcc -I -mmcu=$(PROCESSOR) $(CFLAGS) -Wl,-Map,program.map -o $@ $^ -L /usr/lib64/binutils/avr/2.19.1
+#program.elf : $(OBJS)
+#	avr-gcc -I -mmcu=$(PROCESSOR) $(CFLAGS) -Wl,-Map,program.map -o $@ $^ -L /usr/lib64/binutils/avr/2.19.1
+#	avr-size -A $@
+
+program.elf : $(SRCS)
+	avr-gcc --combine -fwhole-program -I -mmcu=$(PROCESSOR) $(CFLAGS) -o $@ $^ -L /usr/lib64/binutils/avr/2.19.1 $(EXTRA_LD_FLAGS) > program.lst
 	avr-size -A $@
 
 program.hex : program.elf
 	avr-objcopy -j .text -j .data -O ihex program.elf program.hex 
 
-program.lst : $(SRCS)
-	avr-gcc -c -g -Wa,-a,-ad $(CFLAGS) $^ > $@
+#program.lst : $(SRCS)
+#	avr-gcc -c -g -Wa,-a,-ad $(CFLAGS) $^ > $@
 
 burn : program.hex
 	avrdude -c usbtiny -p $(PROGRAMCODE) -V -U flash:w:program.hex 

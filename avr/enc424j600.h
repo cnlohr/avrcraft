@@ -59,11 +59,11 @@ void enc424j600_finish_callback_now();
 void enc424j600_popblob( uint8_t * data, uint8_t len );
 void enc424j600_dumpbytes( uint8_t len );
 uint16_t enc424j600_pop16();
-inline uint8_t enc424j600_pop8() { return espiR(); }
+#define enc424j600_pop8  espiR
 
 //Raw, on-wire push. (assuming already in write)
 void enc424j600_pushblob( const uint8_t * data, uint8_t len );
-inline void enc424j600_push8( uint8_t v)  { espiW(v); }
+#define enc424j600_push8  espiW
 void enc424j600_push16( uint16_t v);
 
 //XXX: Todo: see if we can find a faster way of invoking espiR.

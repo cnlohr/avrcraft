@@ -12,10 +12,8 @@
 #include <avr/pgmspace.h>
 #include "../dumbcraft.h"
 #include <http.h>
-#include <basicfat.h>
 #include <string.h>
-#include <util10.h>
-
+#include <basicfat.h>
 
 /*
 Useful ports:
@@ -214,114 +212,16 @@ uint8_t TCPReceiveData( uint8_t connection, uint16_t totallen )
 
 #ifndef NO_HTTP
 
-
-void PushStr( const char * msg )
-{
-	while( *msg )
-	{
-		PUSH( *(msg++) );
-	}
-}
-
-struct FileInfo filedescriptors[HTTP_CONNECTIONS];
-
+/*
 void HTTPCustomStart( uint8_t conn )
 {
-	uint8_t i;
-	struct HTTPConnection * h = &HTTPConnections[conn];
-	const char * path = &h->pathbuffer[0];
-
-	if( h->pathbuffer[0] == '/' )
-		path++;
-
-	h->clusterno = FindClusterFileInDir( path, ROOT_CLUSTER, -1, &h->bytesleft );
-	h->bytessofar = 0;
-
-	sendchr( 0 );
-	sendstr( "Getting: " );
-	sendstr( path );
-	sendhex4( h->clusterno );
-	sendchr( '\n' );
-
-	if( h->clusterno < 0 )
-	{
-		h->is404 = 1;
-	}
-	else
-	{
-		InitFileStructure( &filedescriptors[conn], h->clusterno );
-		h->isfirst = 1;
-		h->isdone = 0;
-		h->is404 = 0;
-	}
+	HTTPConnections[conn].is404 = 1;
 }
 
 void HTTPCustomCallback( uint8_t conn )
 {
-	uint16_t i, bytestoread;
-	struct HTTPConnection * h = &HTTPConnections[conn];
-
-	if( h->isdone )
-	{
-		HTTPClose( conn );
-		return;
-	}
-	if( h->is404 )
-	{
-		TCPs[conn].sendtype = ACKBIT | PSHBIT;
-		StartTCPWrite( conn );
-		PushStr( "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\nFile not found." );
-		EndTCPWrite( conn );
-		h->isdone = 1;
-		return;
-	}
-	if( h->isfirst )
-	{
-		char stto[10];
-		uint8_t slen = strlen( h->pathbuffer );
-		const char * k;
-		TCPs[conn].sendtype = ACKBIT | PSHBIT;
-		StartTCPWrite( conn );
-		//TODO: Content Length?  MIME-Type?
-		PushStr( "HTTP/1.1 200 Ok\r\nConnection: close\r\nContent-Length: " );
-		Uint32To10Str( stto, h->bytesleft );
-		PushStr( stto );
-		PushStr( "\r\nContent-Type: " );
-		//Content-Type?
-		while( slen && ( h->pathbuffer[--slen] != '.' ) );
-		k = &h->pathbuffer[slen+1];
-		if( strcmp( k, "mp3" ) == 0 )
-		{
-			PushStr( "audio/mpeg3" );
-		}
-		else
-		{
-			PushStr( "text/html" );
-		}
-
-		PushStr( "\r\n\r\n" );
-		EndTCPWrite( conn );
-		h->isfirst = 0;
-		return;
-	}
-
-	StartTCPWrite( conn );
-	StartReadFAT( &filedescriptors[conn] );
-
-	bytestoread = ((h->bytesleft)>512)?512:h->bytesleft;
-	for( i = 0; i < bytestoread; i++ )
-	{
-		PUSH( read8FAT() );	
-	}
-
-	EndReadFAT();
-	EndTCPWrite( conn );
-
-	h->bytesleft -= bytestoread;
-
-	if( !h->bytesleft )
-		h->isdone = 1;
-}
+	//Err... this should't be called.
+}*/
 
 #endif
 
