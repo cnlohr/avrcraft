@@ -408,7 +408,7 @@ void EndTCPWrite( uint8_t c, uint8_t is_retransmit )
 	//XXX: TODO: Should there even be an IF statement here?  Shouldn't we be using xmitpacket?
 	if( !is_retransmit )
 	{
-		enc424j600_endsend();
+		enc424j600_endsend( length );
 	}
 	else
 	{

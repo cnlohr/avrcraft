@@ -7,7 +7,7 @@ SRCS = test.c avr_print.c enc424j600.c iparpetc.c enc424j600_asm.S tcp.c ../dumb
 PROCESSOR=atmega328
 PROGRAMCODE=m328
 COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -Ihttp -Imicrosd -I..
-CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=28636000UL #-DNO_HTTP #-DMUTE_PRINTF #-DNO_HTTP #-Wall  
+CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=28636000UL -DMUTE_PRINTF #-DNO_HTTP #-Wall  
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c
 
