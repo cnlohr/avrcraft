@@ -10,7 +10,7 @@
 #include "iparpetc.h"
 #include "enc424j600.h"
 #include <avr/pgmspace.h>
-#include "../dumbcraft.h"
+#include "dumbcraft.h"
 #include <http.h>
 #include <string.h>
 #include <basicfat.h>
@@ -275,7 +275,7 @@ int main( void )
 	if( initSD() )
 	{
 		sendstr( "Fatal error. Cannot open SD card.\n" );
-		return -1;
+		//return -1;
 	}
 
 	openFAT();

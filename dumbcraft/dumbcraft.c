@@ -20,7 +20,7 @@
 #define PROGMEM
 #endif
 
-//#define DEBUG_DUMBCRAFT
+#define DEBUG_DUMBCRAFT
 
 //We don't want to pass the player ID around with us, this helps us 
 uint8_t    thisplayer;
@@ -376,13 +376,15 @@ void UpdateServer()
 			SwitchToBroadcast();
 			SSpawnPlayer( player );
 			SwitchToSelective();
+
+			p->outcirctail = outcirchead;
 		}
 		if( p->custom_preload_step )
 		{
 			DoCustomPreloadStep( player );
 
 			//This is when we checkin to the updates. (after we've sent the map chunk updates)
-			p->outcirctail = outcirchead;
+//			p->outcirctail = outcirchead;
 		}
 
 		//Send the client a couple chunks to load on.
@@ -439,7 +441,7 @@ void UpdateServer()
 			//It chews up extra stack, program AND .data space.
 
 			StrTack( stt, &optr, "\xa7\x31" );	stt[optr++] = 0;
-			StrTack( stt, &optr, "47" ); 	stt[optr++] = 0;
+			StrTack( stt, &optr, "49" ); 	stt[optr++] = 0; //was 47
 			StrTack( stt, &optr, "\x32\x2e\x34\xe2\x32" ); 	stt[optr++] = 0;
 			StrTack( stt, &optr, "dumbcraft" ); 	stt[optr++] = 0;
 			StrTack( stt, &optr, "0" ); 	stt[optr++] = 0;   //XXX FIXME
@@ -583,7 +585,7 @@ void GotData( uint8_t playerno )
 		case 0x02:  //Player kind of wants to check out the server.
 
 			//Check protocol version
-			if( Rbyte() != 47 )
+			if( Rbyte() != 49 )
 			{
 				ForcePlayerClose( playerno, 'v' );
 #ifdef DEBUG_DUMBCRAFT

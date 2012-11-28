@@ -1,12 +1,21 @@
 all : program.hex burn program.lst
 CC = avr-gcc
 
-OBJS = test.o avr_print.o enc424j600.o iparpetc.o enc424j600_asm.o tcp.o ../dumbcraft.o ../util10.o http/http.o microsd/microsd.o microsd/basicfat.o
-SRCS = test.c avr_print.c enc424j600.c iparpetc.c enc424j600_asm.S tcp.c ../dumbcraft.c ../util10.c http/http.c microsd/microsd.c microsd/basicfat.c
+SRCS = test.c  \
+	../libs/avr_print.c \
+	../ipcore/enc424j600.c \
+	../ipcore/iparpetc.c \
+	../ipcore/enc424j600_asm.S \
+	../ipcore/tcp.c \
+	../dumbcraft/dumbcraft.c \
+	../libs/util10.c \
+	../http/http.c \
+	../microsd/microsd.c \
+	../microsd/basicfat.c
 
 PROCESSOR=atmega328
 PROGRAMCODE=m328
-COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -Ihttp -Imicrosd -I..
+COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft
 CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=28636000UL -DMUTE_PRINTF #-DNO_HTTP #-Wall  
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c
@@ -20,9 +29,6 @@ program.elf : $(SRCS)
 
 program.hex : program.elf
 	avr-objcopy -j .text -j .data -O ihex program.elf program.hex 
-
-#program.lst : $(SRCS)
-#	avr-gcc -c -g -Wa,-a,-ad $(CFLAGS) $^ > $@
 
 burn : program.hex
 	avrdude -c usbtiny -p $(PROGRAMCODE) -V -U flash:w:program.hex 
@@ -40,7 +46,4 @@ burnfuses :
 
 clean : 
 	rm -f *~ high.txt low.txt program.hex program.map program.elf $(OBJS) *.o usbdrv/*.o usbdrv/*~ program.lst
-
-serial :
-	stty -F /dev/ttyUSB0 4800 -parenb -echo -cstopb
 

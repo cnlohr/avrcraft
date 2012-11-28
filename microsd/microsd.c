@@ -8,6 +8,12 @@
 #define FAST_SPI
 #define MICROSD_ASM_SPI
 
+//enabling this means you WILL NOT manipulate the port MOSI, MISO or SCK of the device is on while an
+//operation could be pending.  It is extremely dangerous unless you are sure interrupts won't mess you up!
+//#define MICROSD_ASM_FAST_AND_DANGEROUS
+//TODO: Fix void microSPIW(unsigned char ins)'s ASM and write SPID's too.
+//XXX IT's all broken.
+
 static unsigned char WaitFor( unsigned char c );  //Return 0 if OK, 1 if bad.
 //static unsigned char microSPIRW(unsigned char ins);
 void microSPIW(unsigned char ins);
@@ -328,6 +334,48 @@ static void reCS()
 
 unsigned char __attribute__((naked)) microSPIR()
 {
+#ifdef MICROSD_ASM_FAST_AND_DANGEROUS
+asm volatile( "\
+\n\tin r18, %0\
+\n\tcbr r18, %2\
+\n\tmov r19, r18\
+\n\tsbr r19, %2\
+\n\tclr r24\
+\n\tout %0, r18\
+\n\tout %0, r19\
+\n\tsbic %1, %3\
+\n\tori r24, 0x80\
+\n\tout %0, r18\
+\n\tout %0, r19\
+\n\tsbic %1, %3\
+\n\tori r24, 0x40\
+\n\tout %0, r18\
+\n\tout %0, r19\
+\n\tsbic %1, %3\
+\n\tori r24, 0x20\
+\n\tout %0, r18\
+\n\tout %0, r19\
+\n\tsbic %1, %3\
+\n\tori r24, 0x10\
+\n\tout %0, r18\
+\n\tout %0, r19\
+\n\tsbic %1, %3\
+\n\tori r24, 0x08\
+\n\tout %0, r18\
+\n\tout %0, r19\
+\n\tsbic %1, %3\
+\n\tori r24, 0x04\
+\n\tout %0, r18\
+\n\tout %0, r19\
+\n\tsbic %1, %3\
+\n\tori r24, 0x02\
+\n\tout %0, r18\
+\n\tout %0, r19\
+\n\tsbic %1, %3\
+\n\tori r24, 0x01\
+\n\tout %0, r18\
+\n\t ret \n\t" : : "I" (_SFR_IO_ADDR(SDPORT)), "I" (_SFR_IO_ADDR(SDPIN)), "M" (SDCLK), "I" (SDMISOP) );
+#else
 asm volatile( "\
 \n\t clr r24 \
 \n\t cbi %0, %2 \
@@ -365,10 +413,64 @@ asm volatile( "\
 \n\t cbi %0, %2 \
 \n\t ret \n\t" : : "I" (_SFR_IO_ADDR(SDPORT)), "I" (_SFR_IO_ADDR(SDPIN)), "I" (SDCLKP), "I" (SDMISOP) );
 //r24 is automatically return; This is mostly a naked function.
+#endif
 }
 
 void microSPIW(unsigned char ins)
 {
+#ifdef MICROSD_ASM_FAST_AND_DANGEROUSx
+asm volatile( "\
+\
+\n\tin r18, %1\
+\n\tcbr r18, %3\
+\n\tcbr r18, %4\
+\n\tmov r20, r18\
+\n\tsbr r20, %4\
+\
+\n\tout %1, r18\
+\
+\n\tsbrc %0, 7\
+\n\tout %1, r20\
+\n\tsbi %1, %2\
+\n\tout %1, r18\
+\
+\n\tsbrc %0, 6\
+\n\tout %1, r20\
+\n\tsbi %1, %2\
+\n\tout %1, r18\
+\
+\n\tsbrc %0, 5\
+\n\tout %1, r20\
+\n\tsbi %1, %2\
+\n\tout %1, r18\
+\
+\n\tsbrc %0, 4\
+\n\tout %1, r20\
+\n\tsbi %1, %2\
+\n\tout %1, r18\
+\
+\n\tsbrc %0, 3\
+\n\tout %1, r20\
+\n\tsbi %1, %2\
+\n\tout %1, r18\
+\
+\n\tsbrc %0, 2\
+\n\tout %1, r20\
+\n\tsbi %1, %2\
+\n\tout %1, r18\
+\
+\n\tsbrc %0, 1\
+\n\tout %1, r20\
+\n\tsbi %1, %2\
+\n\tout %1, r18\
+\
+\n\tsbrc %0, 0\
+\n\tout %1, r20\
+\n\tsbi %1, %2\
+\n\tout %1, r18\
+\
+\n\tret\n\t" : : "d" (ins), "I" (_SFR_IO_ADDR(SDPORT)), "I" (SDCLKP), "M" (SDCLK), "M" (SDMOSI) );
+#else
 asm volatile( "\
 \n\t cbi %1, %2\
 \n\t cbi %1, %3\
@@ -419,6 +521,7 @@ asm volatile( "\
 \n\t sbi %1, %2\
 \n\t cbi %1, %2\
 \n\t" : : "r" (ins), "I" (_SFR_IO_ADDR(SDPORT)), "I" (SDCLKP), "I" (SDMOSIP) );
+#endif
 }
 
 void __attribute__((naked)) microSPID()
