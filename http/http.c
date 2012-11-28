@@ -141,7 +141,7 @@ void HTTPTick()
 }
 
 
-static void PushPGMStr( const char * msg )
+void PushPGMStr( const char * msg )
 {
 	uint8_t r;
 
@@ -210,7 +210,7 @@ void HTTPHandleInternalCallback( )
 
 	StartTCPWrite( curhttp->socket );
 #ifdef FAST_SECTOR_TRANSFER
-	StartReadFAT_SA( &curhttp->filedescriptor );
+	StartReadFAT_SA( &curhttp->data.filedescriptor );
 
 	bytestoread = ((curhttp->bytesleft)>512)?512:curhttp->bytesleft;
 	for( i = 0; i < bytestoread; i++ )
@@ -243,7 +243,7 @@ void HTTPHandleInternalCallback( )
 
 static void InternalStartHTTP( )
 {
-	uint32_t clusterno;
+	int32_t clusterno;
 	uint8_t i;
 	const char * path = &curhttp->pathbuffer[0];
 
@@ -272,11 +272,15 @@ static void InternalStartHTTP( )
 
 	if( clusterno < 0 )
 	{
+		sendstr( "CLUSTERNO BAD\n" );
 		curhttp->is404 = 1;
+		curhttp->isfirst = 1;
+		curhttp->isdone = 0;
+		curhttp->is_dynamic = 0;
 	}
 	else
 	{
-		InitFileStructure( &curhttp->filedescriptor, clusterno );
+		InitFileStructure( &curhttp->data.filedescriptor, clusterno );
 		curhttp->isfirst = 1;
 		curhttp->isdone = 0;
 		curhttp->is404 = 0;

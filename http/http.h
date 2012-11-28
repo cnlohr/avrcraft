@@ -36,6 +36,9 @@ void HTTPCustomCallback( );  //called when we can send more data
 //You may call this from a custom callback.
 void HTTPHandleInternalCallback(  );
 
+//Utility function
+void PushPGMStr( const char * msg );
+
 #define TCP_STATE_NONE        0
 #define TCP_STATE_WAIT_METHOD 1
 #define TCP_STATE_WAIT_PATH   2
@@ -47,6 +50,7 @@ void HTTPHandleInternalCallback(  );
 
 #define TCP_WAIT_CLOSE        15
 
+
 struct HTTPConnection
 {
 	uint8_t  state:4;
@@ -55,7 +59,11 @@ struct HTTPConnection
 	uint8_t  is_dynamic:1;
 	uint16_t timeout;
 
-	struct FileInfo filedescriptor;
+	union data_t
+	{
+		struct FileInfo filedescriptor;
+		struct UserData { uint16_t a, b, c; } user;
+	} data;
 
 	uint32_t bytesleft;
 	uint32_t bytessofar;
