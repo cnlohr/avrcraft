@@ -89,6 +89,13 @@ uint16_t enc424j600_get_checksum();
 //Modify a word of memory (little endian)
 void enc424j600_alter_word( uint16_t address, uint16_t val );
 
+//Copy from one part of the enc to the other.
+void enc424j600_copy_memory( uint16_t to, uint16_t from, uint16_t length );
+
+//Low-level access
+void enc424j600_write_ctrl_reg16( uint8_t addy, uint16_t value );
+uint16_t enc424j600_read_ctrl_reg16( uint8_t addy );
+
 
 
 //User must provide this:

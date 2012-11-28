@@ -70,7 +70,7 @@ void enc424j600_dumpbytes( uint8_t len )
 }
 
 
-static void enc_write_ctrl_reg16( uint8_t addy, uint16_t value )
+void enc424j600_write_ctrl_reg16( uint8_t addy, uint16_t value )
 {
 	ETCSPORT &= ~ETCS;
 	espiW( EWCRU );
@@ -103,7 +103,7 @@ static uint8_t enc_read_ctrl_reg8( uint8_t addy )
 	return ret;
 }*/
 
-static uint16_t enc_read_ctrl_reg16( uint8_t addy )
+uint16_t enc424j600_read_ctrl_reg16( uint8_t addy )
 {
 	uint16_t ret;
 	ETCSPORT &= ~ETCS;
@@ -136,21 +136,22 @@ int8_t enc424j600_init( const unsigned char * macaddy )
 
 	standarddelay();
 
-	enc_write_ctrl_reg16( EEUDASTL, 0x1234 );
-	if( enc_read_ctrl_reg16( EEUDASTL ) != 0x1234 )
+	enc424j600_write_ctrl_reg16( EEUDASTL, 0x1234 );
+	if( enc424j600_read_ctrl_reg16( EEUDASTL ) != 0x1234 )
 		return -1;
+
 /*
 	//Section 8.1 of datasheet.
 	do
 	{
-		enc_write_ctrl_reg16( EEUDASTL, 0x1234 );
+		enc424j600_write_ctrl_reg16( EEUDASTL, 0x1234 );
 		i++;
 		if( i > 250 )
 		{
 			//Error. Cannot initialize.
 			return -1;
 		}
-	} while( enc_read_ctrl_reg16( EEUDASTL ) != 0x1234 );
+	} while( enc424j600_read_ctrl_reg16( EEUDASTL ) != 0x1234 );
 */
 	//Instead of ECONing, we do it this way.
 	enc_oneshot( ESSETETHRST );
@@ -159,21 +160,24 @@ int8_t enc424j600_init( const unsigned char * macaddy )
 	standarddelay();
 
 	//the datasheet says to do this, but if I do, sometimes from a cold boot, it doesn't work.
-//	if( enc_read_ctrl_reg16( EEUDASTL ) )
+//	if( enc424j600_read_ctrl_reg16( EEUDASTL ) )
 //	{
 //		return -2;
 //	}
 
 	//EECON2, add on "txmac" so we can save that time internally.
-	enc_write_ctrl_reg16( EECON2L, 0xEB00 );
-	enc_write_ctrl_reg16( EERXSTL, RX_BUFFER_START );
-	enc_write_ctrl_reg16( EMAMXFLL, MAX_FRAMELEN );
+	enc424j600_write_ctrl_reg16( EECON2L, 0xEB00 );
+	enc424j600_write_ctrl_reg16( EERXSTL, RX_BUFFER_START );
+	enc424j600_write_ctrl_reg16( EMAMXFLL, MAX_FRAMELEN );
 	//Must have RX tail here otherwise we will have difficulty moving our buffer along.
-	enc_write_ctrl_reg16( EERXTAILL, 0x5FFE );
+	enc424j600_write_ctrl_reg16( EERXTAILL, 0x5FFE );
 
-	*((uint16_t*)(&MyMAC[0])) = enc_read_ctrl_reg16( EMAADR1L );
-	*((uint16_t*)(&MyMAC[2])) = enc_read_ctrl_reg16( EMAADR2L );
-	*((uint16_t*)(&MyMAC[4])) = enc_read_ctrl_reg16( EMAADR3L );
+	//DMA Copy-from logic uses read-area wrapping logic.
+	enc424j600_write_ctrl_reg16( EEUDASTL, RX_BUFFER_START ); 
+
+	*((uint16_t*)(&MyMAC[0])) = enc424j600_read_ctrl_reg16( EMAADR1L );
+	*((uint16_t*)(&MyMAC[2])) = enc424j600_read_ctrl_reg16( EMAADR2L );
+	*((uint16_t*)(&MyMAC[4])) = enc424j600_read_ctrl_reg16( EMAADR3L );
 
 	//Enable RX
 	enc_oneshot( ESENABLERX );
@@ -185,7 +189,7 @@ void enc424j600_startsend( uint16_t baseaddress)
 {
 	//Start at beginning of scratch.
 	sendbaseaddress = baseaddress;
-	enc_write_ctrl_reg16( EEGPWRPTL, baseaddress );
+	enc424j600_write_ctrl_reg16( EEGPWRPTL, baseaddress );
 	ETCSPORT &= ~ETCS;
 	espiW( EWGPDATA );
 	//Send away!
@@ -196,7 +200,7 @@ void enc424j600_endsend( )
 	uint16_t i;
 	uint16_t es;
 	ETCSPORT |= ETCS;
-	es = enc_read_ctrl_reg16( EEGPWRPTL ) - sendbaseaddress;
+	es = enc424j600_read_ctrl_reg16( EEGPWRPTL ) - sendbaseaddress;
 
 	if( enc424j600_xmitpacket( sendbaseaddress, es ) )
 	{
@@ -206,7 +210,7 @@ void enc424j600_endsend( )
 
 uint16_t enc424j600_get_write_length()
 {
-	return enc_read_ctrl_reg16( EEGPWRPTL ) + 6 - sendbaseaddress;
+	return enc424j600_read_ctrl_reg16( EEGPWRPTL ) + 6 - sendbaseaddress;
 }
 
 int8_t enc424j600_xmitpacket( uint16_t start, uint16_t len )
@@ -228,8 +232,8 @@ int8_t enc424j600_xmitpacket( uint16_t start, uint16_t len )
 		standarddelay();
 	}
 
-	enc_write_ctrl_reg16( EETXSTL, start );
-	enc_write_ctrl_reg16( EETXLENL, len );
+	enc424j600_write_ctrl_reg16( EETXSTL, start );
+	enc424j600_write_ctrl_reg16( EETXLENL, len );
 
 	//Don't worry, by default this part inserts the padding and crc.
 
@@ -248,7 +252,7 @@ void enc424j600_finish_callback_now()
 		nextpos = 0x5FFE;
 	else
 		nextpos = NextPacketPointer - 2;
-	enc_write_ctrl_reg16( EERXTAILL, nextpos );
+	enc424j600_write_ctrl_reg16( EERXTAILL, nextpos );
 	termcallbackearly = 1;
 }
 
@@ -269,9 +273,9 @@ unsigned short enc424j600_recvpack()
 
 /*
 	sendchr( '\n' );
-	sendhex4( enc_read_ctrl_reg16( EERXHEADL ) );
+	sendhex4( enc424j600_read_ctrl_reg16( EERXHEADL ) );
 	sendchr( ':' );
-	sendhex4( enc_read_ctrl_reg16( EERXTAILL ) );
+	sendhex4( enc424j600_read_ctrl_reg16( EERXTAILL ) );
 	sendchr( '\n' );
 	*/
 
@@ -283,7 +287,7 @@ unsigned short enc424j600_recvpack()
 
 //	sendchr( '.' );
 	//Configure ERXDATA for reading.
-	enc_write_ctrl_reg16( EERXRDPTL, NextPacketPointer );
+	enc424j600_write_ctrl_reg16( EERXRDPTL, NextPacketPointer );
 
 	//Start reading!!!
 
@@ -312,16 +316,21 @@ unsigned short enc424j600_recvpack()
 	return 0;
 }
 
+void enc424j600_wait_for_dma()
+{
+	uint8_t i = 0;
+	//wait for previous DMA operation to complete
+	while( ( enc_read_ctrl_reg8_common( EECON1L ) & _BV(5) )  &&  (i++ < 250 ) ) standarddelay();
+}
 
 
 //Start a checksum
 void enc424j600_start_checksum( uint16_t start, uint16_t len )
 {
 	uint8_t i = 0;
-	//wait for previous DMA operation to complete
-	while( ( enc_read_ctrl_reg8_common( EECON1L ) & _BV(5) )  &&  (i++ < 250 ) ) standarddelay();
-	enc_write_ctrl_reg16( EEDMASTL, start + sendbaseaddress );
-	enc_write_ctrl_reg16( EEDMALENL, len );
+	enc424j600_wait_for_dma();
+	enc424j600_write_ctrl_reg16( EEDMASTL, start + sendbaseaddress );
+	enc424j600_write_ctrl_reg16( EEDMALENL, len );
 	enc_oneshot( ESDMACKSUM );
 }
 
@@ -330,22 +339,30 @@ uint16_t enc424j600_get_checksum()
 {
 	uint16_t ret;
 	uint8_t i = 0;
-	//wait for previous DMA operation to complete
-	while( ( enc_read_ctrl_reg8_common( EECON1L ) & _BV(5) )  &&  (i++ < 250 ) ) standarddelay();
-
-	ret = enc_read_ctrl_reg16( EEDMACSL );
+	enc424j600_wait_for_dma();
+	ret = enc424j600_read_ctrl_reg16( EEDMACSL );
 	return (ret >> 8 ) | ( ( ret & 0xff ) << 8 );
 }
 
 //Modify a word of memory (based off of offset from start sending)
 void enc424j600_alter_word( uint16_t address, uint16_t val )
 {
-	enc_write_ctrl_reg16( EEUDAWRPTL, address + sendbaseaddress );
+	enc424j600_write_ctrl_reg16( EEUDAWRPTL, address + sendbaseaddress );
 	ETCSPORT &= ~ETCS;
 	espiW( EWUDADATA );
 	espiW( val >> 8 );
 	espiW( val & 0xFF );
 	ETCSPORT |= ETCS;
+}
+
+
+void enc424j600_copy_memory( uint16_t to, uint16_t from, uint16_t length )
+{
+	enc424j600_wait_for_dma();
+	enc424j600_write_ctrl_reg16( EEDMASTL, from );
+	enc424j600_write_ctrl_reg16( EEDMADSTL, to );
+	enc424j600_write_ctrl_reg16( EEDMALENL, length );
+	enc_oneshot( ESDMACOPY );
 }
 
 
@@ -387,7 +404,7 @@ const unsigned char enc_config_data[] PROGMEM = {
 
 
 //Here is one option, a loop to iterate through values.  Unless you exceed six variables, it's cheaper to just
-//enc_write_ctrl_reg16(...) your stuff.
+//enc424j600_write_ctrl_reg16(...) your stuff.
 	i = 0;
 	do
 	{
@@ -397,6 +414,6 @@ const unsigned char enc_config_data[] PROGMEM = {
 		targ = pgm_read_byte( enc_config_data + (i++) );
 		val = pgm_read_word( enc_config_data + i ); i+=2;
 		if( targ == 0xFF ) break;
-		enc_write_ctrl_reg16( targ, val );
+		enc424j600_write_ctrl_reg16( targ, val );
 	} while(1);
 */

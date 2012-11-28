@@ -73,29 +73,21 @@ static void HandleICMP()
 	unsigned short id;
 	unsigned short seqnum;
 	unsigned char type;
-	unsigned char * payload;
 	unsigned short payloadsize = iptotallen - SIZEOFICMP;
 
-	//If you don't do this popblob will fail.
-	if( payloadsize > 255 ) return;
-
-	//XXX TODO: be more careful here.
-	payload = alloca( payloadsize );
-
-	//Packet too large
-	if( !payload ) return;
+	unsigned short payload_from_start, payload_dest_start;
 
 	type = POP;
-//	POP; //code
-//	POP16; //checksum
-	enc424j600_dumpbytes(3);
-	id = POP16;
-	seqnum = POP16;
+//	enc424j600_dumpbytes(3);
+//	id = POP16;
+//	seqnum = POP16;
 
-	POPB( payload, payloadsize );
-
-	enc424j600_finish_callback_now();
-
+//Tricky: We would ordinarily POPB to read out the payload, but we're using
+//the DMA engine to copy that data.
+//	POPB( payload, payloadsize );
+	//Suspend reading for now (but don't allow over-writing of the data)
+	enc424j600_stopop();
+	payload_from_start = enc424j600_read_ctrl_reg16( EERXRDPTL );
 
 	switch( type )
 	{
@@ -107,12 +99,16 @@ static void HandleICMP()
 
 		PUSH16( 0 ); //ping reply + code
 		PUSH16( 0 ); //Checksum
-		PUSH16( id );
-		PUSH16( seqnum );
-		PUSHB( payload, payloadsize );
+	//	PUSH16( id );
+	//	PUSH16( seqnum );
 
-		//Packet loaded.
+		//Packet confiugred.  Need to copy payload.
+		//Ordinarily, we'd PUSHB for the payload, but we're currently using the DMA engine for our work here.
 		enc424j600_stopop();
+		payload_dest_start = enc424j600_read_ctrl_reg16( EEGPWRPTL );
+		enc424j600_copy_memory( payload_dest_start, payload_from_start, payloadsize + 4 );  //+4 = id + seqnum (we're DMAing that, too)
+		enc424j600_write_ctrl_reg16( EEGPWRPTL, payload_dest_start + payloadsize + 4 );//+4 = id + seqnum (we're DMAing that, too)
+		enc424j600_finish_callback_now();
 
 		//Calculate header and ICMP checksums
 		enc424j600_start_checksum( 8, 20 );
@@ -126,6 +122,7 @@ static void HandleICMP()
 
 		break;
 	}
+
 }
 
 
