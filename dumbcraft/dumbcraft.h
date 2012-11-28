@@ -20,7 +20,7 @@
 #define MAPSIZECHUNKS 1
 
 //MUST be a power of two.
-#define OUTCIRCBUFFSIZE 256
+#define OUTCIRCBUFFSIZE 512
 
 #include <stdint.h>
 
