@@ -78,7 +78,7 @@ static void HandleICMP()
 	unsigned short payload_from_start, payload_dest_start;
 
 	type = POP;
-//	enc424j600_dumpbytes(3);
+	enc424j600_dumpbytes(3);
 //	id = POP16;
 //	seqnum = POP16;
 

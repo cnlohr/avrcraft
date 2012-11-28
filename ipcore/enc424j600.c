@@ -362,7 +362,7 @@ void enc424j600_copy_memory( uint16_t to, uint16_t from, uint16_t length )
 	enc424j600_write_ctrl_reg16( EEDMASTL, from );
 	enc424j600_write_ctrl_reg16( EEDMADSTL, to );
 	enc424j600_write_ctrl_reg16( EEDMALENL, length );
-	enc_oneshot( ESDMACOPY );
+	enc_oneshot( ESDMACOPY ); //XXX TODO: Should we be purposefully /not/ calculating checksum?  Does it even matter?
 }
 
 
