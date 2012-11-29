@@ -140,7 +140,7 @@ void HandleTCP(uint16_t iptotallen)
 		t->dest_addr = *((uint32_t*)ipsource);
 		t->ack_num = sequence_num + 1;
 		t->seq_num = 0xAAAAAAAA; //should be random?
-		t->state = SYN_RECEIVED;
+		t->state = ESTABLISHED;
 		t->time_since_sent = 0;
 		t->idletime = 0;
 
@@ -152,7 +152,7 @@ void HandleTCP(uint16_t iptotallen)
 		StartTCPWrite( rsck );
 
 		t->seq_num++;
-		t->next_seq_num = t->seq_num;
+//		t->seq_num = t->seq_num;
 
 		//The syn overrides everything, so we can return.
 		goto end_and_emit;
@@ -179,8 +179,16 @@ void HandleTCP(uint16_t iptotallen)
 
 	if( flags & ACKBIT ) //ACK
 	{
-		int16_t diff = ack_num - t->next_seq_num;// + iptotallen; // I don't know about this part)
-//		printf( "%d / %d\n", ack_num, t->next_seq_num );
+		//t->sendlength - 34 - 20
+		uint16_t payloadlen = t->sendlength - 34 - 20;
+		uint32_t nextseq = t->seq_num;
+		if( payloadlen == 0)
+			nextseq ++;               //SEQ NUM
+		else
+			nextseq += payloadlen;   //SEQ NUM
+
+		int16_t diff = ack_num - nextseq;// + iptotallen; // I don't know about this part)
+//		printf( "%d / %d\n", ack_num, t->seq_num );
 
 		//Lost a packet...
 		if( diff < 0 )
@@ -194,7 +202,8 @@ void HandleTCP(uint16_t iptotallen)
 			t->idletime = 0;
 			t->time_since_sent = 0;
 
-			t->seq_num = t->next_seq_num;
+			t->seq_num = nextseq;
+			//t->seq_num = t->seq_num;
 		}
 	}
 
@@ -233,7 +242,7 @@ void HandleTCP(uint16_t iptotallen)
 				if( t->time_since_sent )
 				{
 					//hacky, we need to send an ack, but we can't overwrite the existing packet.
-					TCPs[0].seq_num = t->next_seq_num;//t->seq_num;
+					TCPs[0].seq_num = t->seq_num;//t->seq_num;
 					TCPs[0].ack_num = t->ack_num;
 					TCPs[0].sendtype = ACKBIT;
 					rsck = 0;
@@ -245,13 +254,17 @@ void HandleTCP(uint16_t iptotallen)
 					goto send_early;
 				}
 			}
+			else
+			{
+				//Do nothing
+			}
 		}
 		else
 		{
 			//Otherwise, discard packet.
 		}
 	}
-	
+
 	enc424j600_finish_callback_now();
 	return;
 
@@ -354,7 +367,7 @@ void EndTCPWrite( uint8_t c )
 	uint16_t ppl, ppl2;
 	struct tcpconnection * t = &TCPs[c];
 	unsigned short length;
-	unsigned short payloadlen;
+//	unsigned short payloadlen;
 	unsigned short base = t->sendptr;
 
 	enc424j600_stopop();
@@ -362,18 +375,13 @@ void EndTCPWrite( uint8_t c )
 	length = enc424j600_get_write_length();
 	t->sendlength = length;
 
-	payloadlen = length - 34 - 20;
+//	payloadlen = length - 34 - 20;
 
 	//Expecting an ACK.
 	if( t->sendtype & ( PSHBIT | SYNBIT | FINBIT ) ) //PSH, SYN, RST or FIN packets
 	{
 		t->time_since_sent = 1;
 		t->retries = 0;
-
-		if( payloadlen == 0)
-			t->next_seq_num = t->seq_num + 1;               //SEQ NUM
-		else
-			t->next_seq_num += payloadlen;   //SEQ NUM
 	}
 
 	//Write length in IP header

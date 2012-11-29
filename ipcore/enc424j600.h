@@ -19,15 +19,12 @@
 uint8_t espiR();
 void espiW( uint8_t i );
 
-//Memory configuration
-//The ENC424j600 has 0x5FFF (24kB) bytes of memory
-//We have to make good use of it.
+#ifndef RX_BUFFER_SIZE
+#error NO RX_BUFFER_SIZE defined.
+#endif
 
 //RX Buffer goes from here to the end of ram): This is already device default
-#define RX_BUFFER_SIZE   (3264)
 #define RX_BUFFER_START  (0x6000 - RX_BUFFER_SIZE)
-
-
 
 #if RX_BUFFER_SIZE < MAX_FRAMELEN + 20
 #error RX_BUFFER_SIZE not big enough.

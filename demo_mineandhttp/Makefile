@@ -25,6 +25,7 @@ EXTRA_LD_FLAGS=-Wl,--relax -Wa,-a,-ad -mcall-prologues
 program.elf : $(SRCS)
 	avr-gcc --combine -fwhole-program -I -mmcu=$(PROCESSOR) $(CFLAGS) -o $@ $^ -L /usr/lib64/binutils/avr/2.19.1 $(EXTRA_LD_FLAGS) > program.lst
 	avr-size -A $@
+	@echo "Total = .data + .text"
 	avr-objdump program.elf -t > program.map
 
 program.hex : program.elf

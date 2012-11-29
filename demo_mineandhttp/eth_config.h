@@ -48,9 +48,6 @@
 //Minimum MTU every host must be able to handle; 
 #define MAX_FRAMELEN     578
 
-//Scratchpad for sending out packets like UDP, ICMP, ARP, etc.
-#define TX_SCRATCHPAD_END  1024
-
 //Do this to disable printf's and save space
 //#define MUTE_PRINTF
 
@@ -92,6 +89,33 @@
 #define INCLUDE_HTTP_SERVER
 #define HTTP_SERVER_TIMEOUT (10000) 
 #define HTTP_CONNECTIONS 6
+
+
+//Scratchpad for sending out packets like UDP, ICMP, ARP, etc.
+#define TX_SCRATCHPAD_END  1024
+
+#define RX_BUFFER_SIZE   (3264)
+
+//Memory configuration
+//The ENC424j600 has 0x6000 (24kB) bytes of memory
+//We have to make good use of it.
+// 0x0000
+//  [Scratchpad]
+// 0x0400
+//  [TCP packets (578+42)*TCP_SOCKETS
+// 0x1b84 (assuming 10 sockets)
+//  [unused area]
+// 0x5340 (RX_BUFFER_START (0x6000-RX_BUFFER_SIZE))
+//  [RX Buffer]
+// 0x6000 (End of standard SRAM)
+
+#ifdef INCLUDE_TCP
+#define FREE_ENC_START TX_SCRATCHPAD_END + (TCP_SOCKETS * TCP_BUFFERSIZE)
+#else
+#define FREE_ENC_START TX_SCRATCHPAD_END
+#endif
+
+#define FREE_ENC_END (RX_BUFFER_START-2)
 
 
 #ifndef ASSEMBLY

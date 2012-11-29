@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 #include "basicfat.h"
-#include "eth_config.h"
+#include "enc424j600.h"
 
 #ifdef INCLUDE_HTTP_SERVER
 
