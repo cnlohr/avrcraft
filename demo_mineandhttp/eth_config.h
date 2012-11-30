@@ -95,6 +95,7 @@
 #define TX_SCRATCHPAD_END  1024
 
 #define RX_BUFFER_SIZE   (3264)
+#define RX_BUFFER_END    0x5FFF
 
 //Memory configuration
 //The ENC424j600 has 0x6000 (24kB) bytes of memory
@@ -110,9 +111,9 @@
 // 0x6000 (End of standard SRAM)
 
 #ifdef INCLUDE_TCP
-#define FREE_ENC_START TX_SCRATCHPAD_END + (TCP_SOCKETS * TCP_BUFFERSIZE)
+#define FREE_ENC_START (TX_SCRATCHPAD_END + (TCP_SOCKETS * TCP_BUFFERSIZE) + 2)
 #else
-#define FREE_ENC_START TX_SCRATCHPAD_END
+#define FREE_ENC_START (TX_SCRATCHPAD_END + 2)
 #endif
 
 #define FREE_ENC_END (RX_BUFFER_START-2)

@@ -10,11 +10,65 @@
 #include "os_generic.h"
 
 
+//MUST be a power of two.
+#define OUTCIRCBUFFSIZE 512
+
 int playersockets[MAX_PLAYERS];
 
 uint8_t sendbuffer[16384];
 uint16_t sendptr;
 uint8_t sendplayer;
+
+uint8_t  outcirc[OUTCIRCBUFFSIZE];
+uint16_t outcirchead = 0;
+uint8_t  is_in_outcirc;
+
+void StartupBroadcast() { is_in_outcirc = 1; }
+void DoneBroadcast() { is_in_outcirc = 0; }
+void PushByte( uint8_t byte );
+void Sbyte( uint8_t b )
+{
+	if( is_in_outcirc )
+	{
+		printf( "Broadcast: %02x (%c)\n", b, b );
+		outcirc[outcirchead & (OUTCIRCBUFFSIZE-1)] = b;
+		outcirchead++;
+	} else {
+		PushByte( b );
+	}
+}
+
+uint16_t GetRoomLeft()
+{
+	return 512-sendptr;
+}
+
+
+uint16_t GetCurrentCircHead()
+{
+	return outcirchead;
+}
+
+uint8_t UnloadCircularBufferOnThisClient( uint16_t * whence )
+{
+	uint16_t i16;
+	uint16_t w = *whence;
+
+	i16 = GetRoomLeft();
+	while( w != outcirchead && i16 )
+	{
+		printf( "." );
+		PushByte( outcirc[(w++)&(OUTCIRCBUFFSIZE-1)] );
+		i16--;
+	}
+
+	*whence = w;
+
+	if( !i16 )
+		return 1;
+	else
+		return 0;
+}
 
 void SendData( uint8_t playerno, unsigned char * data, uint16_t packetsize )
 {
@@ -40,7 +94,6 @@ void SendStart( uint8_t playerno )
 void PushByte( uint8_t byte )
 {
 	sendbuffer[sendptr++] = byte;
-	//printf( "%02x ", byte );
 }
 
 void EndSend( )

@@ -5,7 +5,7 @@
 #include "avr_print.h"
 #include <alloca.h>
 
-#include <avr/delay.h>
+#include <util/delay.h>
 
 static uint32_t fat_partition_head;
 static uint32_t first_data_sector;

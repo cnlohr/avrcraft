@@ -3,7 +3,7 @@
 #include "microsd.h"
 #include <avr/io.h>
 #include "avr_print.h"
-#include <avr/delay.h>
+#include <util/delay.h>
 
 #define FAST_SPI
 #define MICROSD_ASM_SPI

@@ -113,6 +113,8 @@ void TCPConnectionClosing( uint8_t conn )
 #endif
 }
 
+///////////////////////////////////////DUMBCRAFT AREA//////////////////////////////////////////
+
 uint8_t disable;
 
 uint8_t CanSend( uint8_t playerno ) //DUMBCRAFT
@@ -127,8 +129,74 @@ void SendStart( uint8_t playerno )  //DUMBCRAFT
 	disable = 0;
 }
 
-void PushByte( uint8_t byte ) //DUMBCRAFT
+//Must be power-of-two
+#define CIRC_BUFFER_SIZE 4096
+#if ( (FREE_ENC_END) - (FREE_ENC_START) ) <= (CIRC_BUFFER_SIZE)
+#error Not enough free space on enc424j600
+#endif
+#define CIRC_END ((FREE_ENC_START) + (CIRC_BUFFER_SIZE))
+
+uint16_t circ_buffer_at = 0;
+uint8_t incirc = 0;
+uint16_t GetCurrentCircHead()
 {
+	return circ_buffer_at;
+}
+
+uint8_t UnloadCircularBufferOnThisClient( uint16_t * whence )
+{
+	//TRICKY: we're in the middle of a transaction now.
+	//We need to back out, copy the memory, then pretend nothing happened.
+	uint16_t w = *whence;
+	uint16_t togomaxB = (circ_buffer_at - w)&((CIRC_BUFFER_SIZE)-1);
+
+	if( togomaxB == 0 ) return 0;
+
+
+	ETCSPORT |= ETCS;
+	uint16_t esat = enc424j600_read_ctrl_reg16( EEGPWRPTL );
+
+	uint16_t togomaxA = 512 - ( esat - sendbaseaddress );
+	uint16_t togo = (togomaxA>togomaxB)?togomaxB:togomaxA;
+
+//printf( "w: %04x togo: %04x (%04x/%04x)  %04x %04x %04x\n", w, togo, togomaxA, togomaxB, FREE_ENC_START, CIRC_END, circ_buffer_at );
+	enc424j600_copy_memory( esat, w + (FREE_ENC_START), togo, (FREE_ENC_START), CIRC_END-1 );
+
+	enc424j600_write_ctrl_reg16( EEGPWRPTL, esat + togo );
+	ETCSPORT &= ~ETCS;
+	espiW( EWGPDATA );
+
+	*whence = (w + togo)&((CIRC_BUFFER_SIZE)-1);
+
+	return togo != togomaxB;
+
+}
+
+
+void StartupBroadcast()
+{
+	ETCSPORT |= ETCS;
+
+	//is_in_outcirc = 1;
+	enc424j600_write_ctrl_reg16( EEUDAWRPTL, circ_buffer_at + (FREE_ENC_START) );
+	enc424j600_write_ctrl_reg16( EEUDASTL, FREE_ENC_START );
+	enc424j600_write_ctrl_reg16( EEUDANDL, CIRC_END - 1);
+
+	ETCSPORT &= ~ETCS;
+	espiW( EWUDADATA );
+	incirc = 1;
+}
+
+void DoneBroadcast()
+{
+	ETCSPORT |= ETCS;
+	circ_buffer_at = enc424j600_read_ctrl_reg16( EEUDAWRPTL ) - (FREE_ENC_START);
+	incirc = 0;
+}
+
+void Sbyte( uint8_t byte ) //DUMBCRAFT
+{
+/*
 	if( disable )
 	{
 		return;
@@ -140,14 +208,17 @@ void PushByte( uint8_t byte ) //DUMBCRAFT
 		disable = 1;
 		return;
 	}
-
-	if( bytespushed == 0 )
+*/
+	if( !incirc )
 	{
-		TCPs[lastconnection].sendtype = ACKBIT | PSHBIT;
-		StartTCPWrite( lastconnection );
+		if( bytespushed == 0 )
+		{
+			TCPs[lastconnection].sendtype = ACKBIT | PSHBIT;
+			StartTCPWrite( lastconnection );
+		}
+		bytespushed++;
 	}
 	PUSH( byte );
-	bytespushed++;
 }
 
 void EndSend( )  //DUMBCRAFT
@@ -282,7 +353,6 @@ int main( void )
 #endif
 
 	InitTCP();
-
 
 	DDRC &= 0;
 	if( enc424j600_init( MyMAC ) )

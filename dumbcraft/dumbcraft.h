@@ -6,6 +6,7 @@
 #define MAX_PLAYERS 3
 #define MAX_PLAYER_NAME 17
 #define PROTO_VERSION 49
+#define PROTO_VERSION_STR "49"
 
 #define PLAYER_EID_BASE 0x20
 
@@ -18,9 +19,6 @@
 #define FIXEDPOINT 5
 
 #define MAPSIZECHUNKS 1
-
-//MUST be a power of two.
-#define OUTCIRCBUFFSIZE 512
 
 #include <stdint.h>
 
@@ -36,18 +34,17 @@ void GotData( uint8_t playerno );
 uint8_t Rbyte();
 uint8_t CanRead();
 void SendStart( uint8_t playerno ); //prepare a buffer for send
-void PushByte( uint8_t byte );
+void Sbyte( uint8_t byte );  //Push to either player _or_ circular buffer.
 uint8_t CanSend( uint8_t playerno ); //can this buffer be a send?
 void EndSend( );
 void ForcePlayerClose( uint8_t playerno, uint8_t reason ); //you still must call removeplayer, this is just a notification.
+uint8_t UnloadCircularBufferOnThisClient( uint16_t * whence ); //Push to the current client everything remaining on their stack
+uint16_t GetCurrentCircHead();
+void StartupBroadcast(); //Set up broadcast output.
+void DoneBroadcast(); //Done with broadcast mode.
 
 
 //Game section
-extern uint8_t  outcirc[OUTCIRCBUFFSIZE];
-extern uint16_t outcirchead;
-extern uint8_t  is_in_outcirc;
-#define SwitchToBroadcast() { is_in_outcirc = 1; }
-#define SwitchToSelective() { is_in_outcirc = 0; }
 
 struct Player
 {
@@ -58,8 +55,11 @@ struct Player
 	int16_t ox, oy, os, oz, ow, op;
 
 	uint8_t nyaw, npitch;
+	uint8_t did_not_clean_out_broadcast_last_time:1; //Didn't finish getting all the broadcast circular buffer cleared.
+		//This prevents any 'update' code from happening next time round.
 	uint8_t did_move:1;
 	uint8_t did_pitchyaw:1;
+	uint8_t just_spawned:1;
 
 	uint8_t onground:1;
 	uint8_t active:1;

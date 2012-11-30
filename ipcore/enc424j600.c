@@ -9,7 +9,7 @@
 #include "avr_print.h"
 
 uint8_t termcallbackearly;
-static uint16_t sendbaseaddress;
+uint16_t sendbaseaddress;
 
 static void standarddelay()
 {
@@ -171,9 +171,6 @@ int8_t enc424j600_init( const unsigned char * macaddy )
 	enc424j600_write_ctrl_reg16( EMAMXFLL, MAX_FRAMELEN );
 	//Must have RX tail here otherwise we will have difficulty moving our buffer along.
 	enc424j600_write_ctrl_reg16( EERXTAILL, 0x5FFE );
-
-	//DMA Copy-from logic uses read-area wrapping logic.
-	enc424j600_write_ctrl_reg16( EEUDASTL, RX_BUFFER_START ); 
 
 	*((uint16_t*)(&MyMAC[0])) = enc424j600_read_ctrl_reg16( EMAADR1L );
 	*((uint16_t*)(&MyMAC[2])) = enc424j600_read_ctrl_reg16( EMAADR2L );
@@ -356,9 +353,12 @@ void enc424j600_alter_word( uint16_t address, uint16_t val )
 }
 
 
-void enc424j600_copy_memory( uint16_t to, uint16_t from, uint16_t length )
+void enc424j600_copy_memory( uint16_t to, uint16_t from, uint16_t length, uint16_t range_start, uint16_t range_end )
 {
 	enc424j600_wait_for_dma();
+	enc424j600_write_ctrl_reg16( EEUDASTL, range_start ); 
+	enc424j600_write_ctrl_reg16( EEUDANDL, range_end ); 
+
 	enc424j600_write_ctrl_reg16( EEDMASTL, from );
 	enc424j600_write_ctrl_reg16( EEDMADSTL, to );
 	enc424j600_write_ctrl_reg16( EEDMALENL, length );

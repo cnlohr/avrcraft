@@ -155,8 +155,7 @@ static void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 
 	if( didflip )
 	{
-		//SwitchToBroadcast();
-		//TODO XXX This should be broadcast.
+		SwitchToBroadcast();
 		Sbyte( 0x3d ); //effect
 		Sint( didflip + 999 );
 		Sint( x );

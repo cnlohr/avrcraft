@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include "754lib.h"
 #include <util10.h>
+#include <alloca.h>
 
 #ifdef __AVR__
 #include "avr_print.h"
@@ -20,7 +21,7 @@
 #define PROGMEM
 #endif
 
-#define DEBUG_DUMBCRAFT
+//#define DEBUG_DUMBCRAFT
 
 //We don't want to pass the player ID around with us, this helps us 
 uint8_t    thisplayer;
@@ -64,8 +65,8 @@ void Rbuffer( uint8_t * buffer, uint8_t size )
 uint32_t Rint()
 {
 	uint32_t ret = 0;
-	ret |= Rbyte()<<24;
-	ret |= Rbyte()<<16;
+	ret |= ((uint32_t)Rbyte())<<24;
+	ret |= ((uint32_t)Rbyte())<<16;
 	ret |= Rbyte()<<8;
 	ret |= Rbyte();
 	return ret;
@@ -111,25 +112,7 @@ int16_t Rfloat()
 
 //////////////////////////////////////////SENDING UTILITIES////////////////////
 
-
-//We can either send to the circular buffer (send to everyone) or we can send
-//to just the current player.  Most of your data should be sent to everyone.
-uint8_t  outcirc[OUTCIRCBUFFSIZE];
-uint16_t outcirchead = 0;
-uint8_t  is_in_outcirc = 1;
-
 //send- utility functions
-
-void Sbyte( uint8_t b )
-{
-	if( is_in_outcirc )
-	{
-		outcirc[outcirchead & (OUTCIRCBUFFSIZE-1)] = b;
-		outcirchead++;
-	} else {
-		PushByte( b );
-	}
-}
 
 void Sint( uint32_t o )
 {
@@ -253,7 +236,7 @@ void InitDumbcraft()
 {
 	memset( &Players, 0, sizeof( Players ) );
 #ifdef DEBUG_DUMBCRAFT
-	printf( "I: SOP: %d\n", sizeof( struct Player ) );
+	printf( "I: SOP: %lu\n", sizeof( struct Player ) );
 #endif
 	InitDumbgame();
 }
@@ -270,11 +253,24 @@ void UpdateServer()
 
 		p->update_number++;
 		SendStart( player );
-		SwitchToSelective();
 
+		//If we didn't finish getting all the broadcast data last time
+		//We must do that now.
+		if( p->has_logged_on )
+		{
+			if( p->did_not_clean_out_broadcast_last_time )
+				goto now_sending_broadcast;
+			else
+			{
+				//From the game portion
+				PlayerUpdate( player );
+			}
+		}
 
 		//BIG NOTE:
-		//Everything in here is SELECTIVE! This means it gets sent to the specific client ready to receive data!
+		//Everything in here is SELECTIVE! This means it gets sent to the specific client
+		//ready to receive data!
+		//
 		//Login process:
 		//
 		//For checking in with the server:  (p->need_to_send_playerlist) and that's about it.
@@ -290,34 +286,6 @@ void UpdateServer()
 
 		if( p->has_logged_on )
 		{
-
-			//XXX BIG TODO!!! 
-			//If we didn't clear out the buffer, don't allow more packets after this!!! We don't want to fragment the circ buffer.
-			//We should probably be [[send client specific data] + [send incomplete buffer update] ... [[send rest of buffer update] + [send client data]]
-			PlayerUpdate( player );
-			if( p->outcirctail > outcirchead - OUTCIRCBUFFSIZE )
-			{
-				i16 = 0;
-				while( p->outcirctail != outcirchead )
-				{
-					Sbyte( outcirc[(p->outcirctail++)&(OUTCIRCBUFFSIZE-1)] );
-					i16++;
-				}
-
-#ifdef DEBUG_DUMBCRAFT
-				//Close-to-overflow?
-				if( i16 > 250 )
-				{
-					//sendchr( 0 ); sendhex4( i16 ); sendchr( '\n' );
-					printf( "OVF:%d\n", i16 );
-				}
-#endif
-			}
-			else
-			{
-				p->outcirctail = outcirchead;
-			}
-
 			//If we turn around too far, we MUST warp a reset, because if we get an angle too big,
 			//we overflow the angle in our 16-bit fixed point.
 
@@ -364,6 +332,7 @@ void UpdateServer()
 			p->need_to_spawn = 0;
 			p->next_chunk_to_load = 1;
 			p->has_logged_on = 1;
+			p->just_spawned = 1;  //For next time round we send to everyone
 
 			//Show us the rest of the players
 			for( i = 0; i < MAX_PLAYERS; i++ )
@@ -372,12 +341,6 @@ void UpdateServer()
 					SSpawnPlayer( i );
 			}
 
-			//If we spawn, tell everyone!
-			SwitchToBroadcast();
-			SSpawnPlayer( player );
-			SwitchToSelective();
-
-			p->outcirctail = outcirchead;
 		}
 		if( p->custom_preload_step )
 		{
@@ -441,7 +404,7 @@ void UpdateServer()
 			//It chews up extra stack, program AND .data space.
 
 			StrTack( stt, &optr, "\xa7\x31" );	stt[optr++] = 0;
-			StrTack( stt, &optr, "49" ); 	stt[optr++] = 0; //was 47
+			StrTack( stt, &optr, PROTO_VERSION_STR ); 	stt[optr++] = 0;
 			StrTack( stt, &optr, "\x32\x2e\x34\xe2\x32" ); 	stt[optr++] = 0;
 			StrTack( stt, &optr, "dumbcraft" ); 	stt[optr++] = 0;
 			StrTack( stt, &optr, "0" ); 	stt[optr++] = 0;   //XXX FIXME
@@ -463,9 +426,15 @@ void UpdateServer()
 
 			p->need_to_send_keepalive = 0;
 		}
-quickout:
+
+now_sending_broadcast:
+		//Apply any broadcast messages ... if we just spawned, then there's nothing to send.
+		if( p->has_logged_on && !p->just_spawned )
+		{
+			p->did_not_clean_out_broadcast_last_time = UnloadCircularBufferOnThisClient( &p->outcirctail );
+		}
+
 		EndSend();
-		SwitchToBroadcast();
 	}
 }
 
@@ -475,11 +444,13 @@ void TickServer()
 {
 	uint8_t player;
 	dumbcraft_tick++;
+
 #ifdef DEBUG_DUMBCRAFT
 	printf( "Tick.\n" );
 #endif
 
 	//Everything in here should be broadcast to all players.
+	StartupBroadcast();
 
 	for( player = 0; player < MAX_PLAYERS; player++ )
 	{
@@ -490,6 +461,15 @@ void TickServer()
 		if( ( dumbcraft_tick & 0x2f ) == 0 )
 		{
 			p->need_to_send_keepalive = 1;
+		}
+
+		if( p->just_spawned )
+		{
+			p->just_spawned = 0;
+			SSpawnPlayer( player );
+			DoneBroadcast();
+			p->outcirctail = GetCurrentCircHead(); //If we don't, we'll see ourselves.
+			StartupBroadcast();
 		}
 
 		if( p->x != p->ox || p->y != p->oy || p->stance != p->os || p->z != p->oz )
@@ -539,6 +519,9 @@ void TickServer()
 
 		PlayerTickUpdate( player );
 	}
+
+	DoneBroadcast();
+
 }
 
 void AddPlayer( uint8_t playerno )
@@ -564,6 +547,8 @@ void GotData( uint8_t playerno )
 	uint16_t i16;
 	struct Player * p = &Players[playerno];
 	thisplayer = playerno;
+	uint8_t * chat = 0;
+	uint8_t chatlen = 0;
 
 	//This is where we read in a packet from a client.
 	//You can send to the broadcast cicular buffer, but you
@@ -602,19 +587,13 @@ void GotData( uint8_t playerno )
 			i16 = Rshort();
 			if( i16 < 100 )
 			{
-				uint8_t pll = strlen( p->playername );
+				chat = alloca( i16 );
 
-				Sbyte( 0x03 );
-
-				Sshort( i16 + pll + 3 );
-				Sshort( '<' ) ;
-				for( i8 = 0; i8 < pll; i8++ )
-					Sshort( p->playername[i8] ) ;
-				Sshort( '>' ) ;
-				Sshort( ' ' ) ;
-				
+				chatlen = i16;
 				for( i8 = 0; i8 < i16; i8++ )
-					Sshort( Rshort() ) ;
+				{
+					chat[i8] = Rshort();
+				}
 			}
 			break;
 		case 0x0a: //On-ground, client sends this to an annyoing degree.
@@ -655,7 +634,7 @@ void GotData( uint8_t playerno )
 		}
 		case 0xfe: //We probably should respond more intelligently, but for now.
 		{
-			Rbyte(); //magic
+			Rbyte(); //magic?
 			p->need_to_send_playerlist = 1;
 			break;
 		}
@@ -678,6 +657,27 @@ void GotData( uint8_t playerno )
 #endif
 			return;
 		}
+	}
+
+	if( chatlen )
+	{
+		uint8_t pll = strlen( p->playername );
+
+		StartupBroadcast();
+
+		Sbyte( 0x03 );
+
+		Sshort( chatlen + pll + 3 );
+		Sshort( '<' ) ;
+		for( i8 = 0; i8 < pll; i8++ )
+			Sshort( p->playername[i8] ) ;
+		Sshort( '>' ) ;
+		Sshort( ' ' ) ;
+
+		for( i8 = 0; i8 < chatlen; i8++ )
+			Sshort( chat[i8] ) ;
+
+		DoneBroadcast();
 	}
 }
 

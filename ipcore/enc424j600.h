@@ -31,8 +31,6 @@ void espiW( uint8_t i );
 #endif
 
 
-
-
 //return 0 if OK, otherwise nonzero.
 int8_t enc424j600_init( const unsigned char * macaddy );
 
@@ -87,7 +85,8 @@ uint16_t enc424j600_get_checksum();
 void enc424j600_alter_word( uint16_t address, uint16_t val );
 
 //Copy from one part of the enc to the other.
-void enc424j600_copy_memory( uint16_t to, uint16_t from, uint16_t length );
+//Warning range_end is INCLUSIVE! You will likely want to subtract one.
+void enc424j600_copy_memory( uint16_t to, uint16_t from, uint16_t length, uint16_t range_start, uint16_t range_end );
 
 //Low-level access
 void enc424j600_write_ctrl_reg16( uint8_t addy, uint16_t value );
@@ -97,6 +96,12 @@ uint16_t enc424j600_read_ctrl_reg16( uint8_t addy );
 
 //User must provide this:
 void enc424j600_receivecallback( uint16_t receivedbytecount );
+
+
+//For telling where the current transaction started.
+extern uint16_t sendbaseaddress;
+
+
 #endif
 #endif
 
