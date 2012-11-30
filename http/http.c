@@ -18,15 +18,8 @@ struct HTTPConnection * curhttp;
 void HTTPInit( uint8_t id, uint8_t socket )
 {
 	curhttp = &HTTPConnections[id];
+	memset( curhttp, 0, sizeof( struct HTTPConnection ) );
 	curhttp->state = TCP_STATE_WAIT_METHOD;
-	curhttp->state_deets = 0;
-	curhttp->is_dynamic = 0;
-	curhttp->bytesleft = 0;
-	curhttp->timeout = 0;
-
-	curhttp->is404 = 0;
-	curhttp->isdone = 0;
-	curhttp->isfirst = 0;
 	curhttp->socket = socket;
 }
 
