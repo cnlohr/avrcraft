@@ -27,6 +27,11 @@ int main() {
 	SetupClock();
 	sei();
 
+	for( tf = 0; tf < 48*25; tf++ )
+	{
+		framebuffer[tf] = tf;
+	}
+
 	while(1)
 	{
 		sprintf( framebuffer, "%d", tf++ );

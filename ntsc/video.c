@@ -12,8 +12,8 @@
 #define DO_2X
 #define STUPID_FAST_ASM
 //#define SLOW_SOME
-#define WIDTH 40
-#define LINES 24
+#define WIDTH 48
+#define LINES 25
 
 //XXX TODO: Consider slicing apart the font into separate scan lines.
 
@@ -43,11 +43,11 @@ void VideoLine( )
 SPSR |= _BV(SPI2X);
 #endif
 
-	if( thisline < 19 || thisline > 211 )
+	if( thisline < 15 || thisline > 215 )
 	{
 		goto end;
 	}
-	thisline -= 20;
+	thisline -= 16;
 	charsleft = WIDTH;
 	
 	rline = thisline >> 3;
@@ -61,23 +61,20 @@ SPSR |= _BV(SPI2X);
 	asm volatile( "\
 \n\tLMainLoop: \
 \n\t ld r17, X+ \
-\n\t mov r30, r17 \
-\n\t clr r31 \
-\n\t lsl r30 \
-\n\t lsl r30 \
-\n\t rol r31 \
-\n\t lsl r30 \
-\n\t rol r31 \
-\n\t or r30, %2 \
-\n\t subi r30, lo8(-(%5)) \
-\n\t sbci r31, hi8(-(%5)) \
+\n\t mov r18, r17 \
+\n\t andi r18, 0x7f \
+\n\t mov r30, r28 \
+\n\t mov r31, r29 \
+\n\t add r30, r18 \
+\n\t adc r31,__zero_reg__ \
 \n\t lpm r16, Z \
 \n\t sbrs r17, 7 \
-\n\t com r16 "
+\n\t com r16 \
+ "
 #ifdef SAFETY_ON_ASM_WRITE
 "\n\tRetrySend: \
 \n\t sts %0, r16 \
-\n\t lds r17, %4 \
+\n\t lds r17, %3 \
 \n\t sbrc r17, 6 \
 \n\t rjmp RetrySend"
 #elif defined( SLOW_SOME )
@@ -87,26 +84,28 @@ SPSR |= _BV(SPI2X);
 #else
 "\n\t sts %0, r16 \n"
 #endif
-"\n\t dec %3\
+"\n\t dec %2\
 \n\t brne LMainLoop \
-" : : "i" (&SPDR), "x" (&framebuffer[rline]), "d" (pline), "d" (charsleft), "i" (&SPSR), "i" (&font_8x8_data) :
- "r30", "r31", "r16", "r17" );
+" : : "i" (&SPDR), "x" (&framebuffer[rline]), "d" (charsleft), "i" (&SPSR), "y" (&font_8x8_data[pline<<7]) : "r30", "r31", "r16", "r17" );
 #else
+
+	uint8_t * fbtl = &font_8x8_data[pline<<7];
 	do
 	{
 		unsigned char c = framebuffer[rline++];
-		const unsigned char * st = &font_8x8_data[ ((c)<<3) | pline ];
+		const unsigned char * st = &fbtl[c];
 		if( (--charsleft) == 0 ) break;
-		c = ~pgm_read_byte( st );
-		do
+		c = pgm_read_byte( st );
+		/*do
 		{
 			SPDR = c;
-		} while( SPSR & _BV(WCOL ) );
+		} while( SPSR & _BV(WCOL ) );*/
+		SPDR = c;
 	} while( 1 );
 #endif
 
 end:
-	_delay_us(2);
+	_delay_us(.6);
 	PORTB &= ~_BV(3);
 	SPCR &= ~( _BV(SPE) | _BV(MSTR) );
 }

@@ -214,7 +214,7 @@ void HTTPHandleInternalCallback( )
 	endSDread();
 	FATAdvanceSector();
 #else
-	StartReadFAT( &curhttp->filedescriptor );
+	StartReadFAT( &curhttp->data.filedescriptor );
 
 	bytestoread = ((curhttp->bytesleft)>512)?512:curhttp->bytesleft;
 	for( i = 0; i < bytestoread; i++ )
