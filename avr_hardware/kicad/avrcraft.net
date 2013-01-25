@@ -1,0 +1,689 @@
+# EESchema Netlist Version 1.1 created  Thu 24 Jan 2013 07:43:59 PM EST
+(
+ ( /5101B31A SM0805  C13 0.01u {Lib=C}
+  (    1 /HighCOut )
+  (    2 N-000014 )
+ )
+ ( /5101B306 SM0603  R12 40k {Lib=R}
+  (    1 N-000019 )
+  (    2 GND )
+ )
+ ( /5101B2F6 SM0603  R13 1.20k {Lib=R}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /5101B2F2 SM0603  R14 6.34k {Lib=R}
+  (    1 N-000015 )
+  (    2 +5V )
+ )
+ ( /5101B2E1 SM0603  C14 .22u {Lib=C}
+  (    1 N-000015 )
+  (    2 +5V )
+ )
+ ( /5101B29F BOURNS-SRR1280  L1 68uH {Lib=INDUCTOR}
+  (    1 +5V )
+  (    2 /HighCOut )
+ )
+ ( /5101B283 $noname  D5 DIODESCH {Lib=DIODESCH}
+  (    1 GND )
+  (    2 /HighCOut )
+ )
+ ( /5101A65E SO8E-WITHPAD  U4 A4447SLJTR {Lib=A4447SLJTR}
+  (    1 N-000014 )
+  (    2 GND )
+  (    3 N-000019 )
+  (    4 GND )
+  (    5 N-000015 )
+  (    6 +5V )
+  (    7 /HighCOut )
+  (    8 /POE+ )
+  (    9 GND )
+ )
+ ( /5101558F SM0805  C12 .1u {Lib=C}
+  (    1 GND )
+  (    2 /POE+ )
+ )
+ ( /51005E59 SMT_ETHERNET  P1 CONN_10 {Lib=CONN_10}
+  (    1 N-000016 )
+  (    2 N-000017 )
+  (    3 N-000010 )
+  (    4 /POEB )
+  (    5 /POEB )
+  (    6 N-000018 )
+  (    7 /POEA )
+  (    8 /POEA )
+  (    9 GND )
+  (   10 GND )
+ )
+ ( /51005940 SM0603  R11 22k {Lib=R}
+  (    1 /POEA )
+  (    2 /POEB )
+ )
+ ( /5100593D SM0603  R9 22k {Lib=R}
+  (    1 /POED )
+  (    2 /POEC )
+ )
+ ( /5100592E BESOP-4  D3 BRIDGE-MB2S-TP {Lib=BRIDGE-MB2S-TP}
+  (    1 /POEB )
+  (    2 /POEA )
+  (    3 /POE+ )
+  (    4 GND )
+ )
+ ( /51005927 BESOP-4  D4 BRIDGE-MB2S-TP {Lib=BRIDGE-MB2S-TP}
+  (    1 /POED )
+  (    2 /POEC )
+  (    3 /POE+ )
+  (    4 GND )
+ )
+ ( /50FDE21B SM0603  R4 1k {Lib=R}
+  (    1 +3.3V )
+  (    2 N-000071 )
+ )
+ ( /50FF036C SM0805  C9 10u {Lib=C}
+  (    1 +5V )
+  (    2 GND )
+ )
+ ( /50FE1E06 SM0805  C8 10u {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /50FE1E04 SM0603  C7 .1u {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
+ )
+ ( /50FE1D53 SM0603  R7 49.9 {Lib=R}
+  (    1 N-000072 )
+  (    2 N-000007 )
+ )
+ ( /50FE1D51 SM0603  R8 49.9 {Lib=R}
+  (    1 N-000007 )
+  (    2 N-000003 )
+ )
+ ( /50FE1D4B SM0805  R10 10 {Lib=R}
+  (    1 +3.3V )
+  (    2 N-000007 )
+ )
+ ( /50FE1D43 SM0805  C6 .01u {Lib=C}
+  (    1 N-000007 )
+  (    2 GND )
+ )
+ ( /50FE1B0C SM0603  R6 49.9 {Lib=R}
+  (    1 N-000012 )
+  (    2 N-000073 )
+ )
+ ( /50FE1B09 SM0603  R5 49.9 {Lib=R}
+  (    1 N-000041 )
+  (    2 N-000073 )
+ )
+ ( /50FE18F9 SM0603  C5 .01u {Lib=C}
+  (    1 +3.3V )
+  (    2 N-000073 )
+ )
+ ( /50FE09F4 BELFuse-S553  T1 S553-5999-52 {Lib=S553-5999-52}
+  (    1 N-000041 )
+  (    2 N-000073 )
+  (    3 N-000012 )
+  (    4 N-000073 )
+  (    5 ? )
+  (    6 N-000003 )
+  (    7 N-000007 )
+  (    8 N-000072 )
+  (    9 N-000016 )
+  (   10 /POEC )
+  (   11 N-000017 )
+  (   12 ? )
+  (   13 ? )
+  (   14 N-000010 )
+  (   15 /POED )
+  (   16 N-000018 )
+ )
+ ( /50FDE06A SM0603  R3 12.4k {Lib=R}
+  (    1 N-000051 )
+  (    2 GND )
+ )
+ ( /50FDDFB7 SM0805  D2 GRN {Lib=LED}
+  (    1 N-000028 )
+  (    2 N-000060 )
+ )
+ ( /50FDDFB2 SM0805  D1 RED {Lib=LED}
+  (    1 N-000059 )
+  (    2 N-000061 )
+ )
+ ( /50FDDFA4 SM0603  R2 680 {Lib=R}
+  (    1 N-000060 )
+  (    2 GND )
+ )
+ ( /50FDDFA0 SM0603  R1 680 {Lib=R}
+  (    1 N-000061 )
+  (    2 GND )
+ )
+ ( /50FDDF10 SM0603  C11 12p {Lib=C}
+  (    1 N-000056 )
+  (    2 GND )
+ )
+ ( /50FDDF0D SM0603  C10 12p {Lib=C}
+  (    1 N-000020 )
+  (    2 GND )
+ )
+ ( /50FDDF0B XTAL4P  X2 25MHz {Lib=CRYSTAL}
+  (    1 N-000020 )
+  (    2 N-000056 )
+ )
+ ( /50FDDED5 SM0805  C4 10u {Lib=C}
+  (    1 GND )
+  (    2 N-000057 )
+ )
+ ( /50FDDE1C SM0603  C3 12p {Lib=C}
+  (    1 GND )
+  (    2 N-000070 )
+ )
+ ( /50FDDE19 SM0603  C2 12p {Lib=C}
+  (    1 GND )
+  (    2 N-000058 )
+ )
+ ( /50FDDE14 XTAL4P  X1 CRYSTAL {Lib=CRYSTAL}
+  (    1 N-000058 )
+  (    2 N-000070 )
+ )
+ ( /50FDDD3A SM0603  C1 .1u {Lib=C}
+  (    1 GND )
+  (    2 N-000068 )
+ )
+ ( /50FDDACD RIBBON6SMT  J1 AVRISP6 {Lib=AVRISP6}
+  (    1 N-000034 )
+  (    2 +5V )
+  (    3 N-000035 )
+  (    4 N-000062 )
+  (    5 N-000063 )
+  (    6 GND )
+ )
+ ( /50FDD883 TQFP32  U1 ATMEGA328-A_CHIPACCURATE {Lib=ATMEGA328-A_CHIPACCURATE}
+  (    1 ? )
+  (    2 ? )
+  (    3 GND )
+  (    4 +5V )
+  (    5 GND )
+  (    6 +5V )
+  (    7 N-000070 )
+  (    8 N-000058 )
+  (    9 ? )
+  (   10 ? )
+  (   11 ? )
+  (   12 ? )
+  (   13 ? )
+  (   14 GND )
+  (   15 N-000062 )
+  (   16 N-000034 )
+  (   17 N-000035 )
+  (   18 +5V )
+  (   19 ? )
+  (   20 N-000068 )
+  (   21 GND )
+  (   22 N-000063 )
+  (   23 ? )
+  (   24 ? )
+  (   25 N-000043 )
+  (   26 N-000040 )
+  (   27 N-000038 )
+  (   28 N-000042 )
+  (   29 N-000063 )
+  (   30 ? )
+  (   31 ? )
+  (   32 N-000071 )
+ )
+ ( /50FDD878 SOT23-5  U2 MCP1824 {Lib=MCP1824}
+  (    1 +5V )
+  (    2 GND )
+  (    3 +5V )
+  (    4 ? )
+  (    5 +3.3V )
+ )
+ ( /50FDC84D TQFP44  U3 ENC424J600 {Lib=ENC424J600}
+  (    1 GND )
+  (    2 N-000020 )
+  (    3 N-000056 )
+  (    4 +3.3V )
+  (    5 ? )
+  (    6 ? )
+  (    7 ? )
+  (    8 ? )
+  (    9 N-000059 )
+  (   10 N-000028 )
+  (   11 N-000051 )
+  (   12 +3.3V )
+  (   13 GND )
+  (   14 GND )
+  (   15 +3.3V )
+  (   16 N-000012 )
+  (   17 N-000041 )
+  (   18 +3.3V )
+  (   19 GND )
+  (   20 N-000003 )
+  (   21 N-000072 )
+  (   22 GND )
+  (   23 ? )
+  (   24 N-000071 )
+  (   25 ? )
+  (   26 ? )
+  (   27 ? )
+  (   28 ? )
+  (   29 ? )
+  (   30 ? )
+  (   31 ? )
+  (   32 ? )
+  (   33 GND )
+  (   34 N-000042 )
+  (   35 N-000038 )
+  (   36 N-000040 )
+  (   37 N-000043 )
+  (   38 ? )
+  (   39 ? )
+  (   40 ? )
+  (   41 ? )
+  (   42 GND )
+  (   43 N-000057 )
+  (   44 +3.3V )
+ )
+)
+*
+{ Allowed footprints by component:
+$component C13
+ SM*
+ C?
+ C1-1
+$endlist
+$component R12
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component R13
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component R14
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component C14
+ SM*
+ C?
+ C1-1
+$endlist
+$component D5
+ D?
+ S*
+$endlist
+$component C12
+ SM*
+ C?
+ C1-1
+$endlist
+$component R11
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component R9
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component R4
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component C9
+ SM*
+ C?
+ C1-1
+$endlist
+$component C8
+ SM*
+ C?
+ C1-1
+$endlist
+$component C7
+ SM*
+ C?
+ C1-1
+$endlist
+$component R7
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component R8
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component R10
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component C6
+ SM*
+ C?
+ C1-1
+$endlist
+$component R6
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component R5
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component C5
+ SM*
+ C?
+ C1-1
+$endlist
+$component R3
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component D2
+ LED-3MM
+ LED-5MM
+ LED-10MM
+ LED-0603
+ LED-0805
+ LED-1206
+ LEDV
+$endlist
+$component D1
+ LED-3MM
+ LED-5MM
+ LED-10MM
+ LED-0603
+ LED-0805
+ LED-1206
+ LEDV
+$endlist
+$component R2
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component R1
+ R?
+ SM0603
+ SM0805
+ R?-*
+$endlist
+$component C11
+ SM*
+ C?
+ C1-1
+$endlist
+$component C10
+ SM*
+ C?
+ C1-1
+$endlist
+$component C4
+ SM*
+ C?
+ C1-1
+$endlist
+$component C3
+ SM*
+ C?
+ C1-1
+$endlist
+$component C2
+ SM*
+ C?
+ C1-1
+$endlist
+$component C1
+ SM*
+ C?
+ C1-1
+$endlist
+$component J1
+ AVR6PIN
+$endlist
+$component U1
+ TQFP32
+$endlist
+$component U2
+ SOT23-5
+$endlist
+$component U3
+ TQFP32
+$endlist
+$endfootprintlist
+}
+{ Pin List by Nets
+Net 1 "GND" "GND"
+ R12 2
+ R13 2
+ C12 1
+ U4 2
+ C1 1
+ U4 9
+ U2 2
+ U1 3
+ J1 6
+ U1 21
+ R2 2
+ U3 1
+ U1 5
+ U4 4
+ D5 1
+ P1 9
+ P1 10
+ U3 13
+ U3 33
+ U3 14
+ U3 42
+ D3 4
+ D4 4
+ C9 2
+ C8 2
+ C7 2
+ U3 19
+ U3 22
+ C10 2
+ R1 2
+ U1 14
+ C4 1
+ C3 1
+ C2 1
+ R3 2
+ C11 2
+ C6 2
+Net 2 "+3.3V" "+3.3V"
+ U3 18
+ U3 12
+ U3 15
+ U3 44
+ R4 1
+ U2 5
+ R10 1
+ C5 1
+ C7 1
+ C8 1
+ U3 4
+Net 3 "" ""
+ T1 6
+ U3 20
+ R8 2
+Net 4 "/POE+" "POE+"
+ D3 3
+ U4 8
+ D4 3
+ C12 2
+Net 5 "/POEA" "POEA"
+ P1 8
+ P1 7
+ R11 1
+ D3 2
+Net 6 "/POEB" "POEB"
+ R11 2
+ P1 5
+ P1 4
+ D3 1
+Net 7 "" ""
+ C6 1
+ T1 7
+ R10 2
+ R8 1
+ R7 2
+Net 10 "" ""
+ P1 3
+ T1 14
+Net 11 "/POEC" "POEC"
+ R9 2
+ T1 10
+ D4 2
+Net 12 "" ""
+ R6 1
+ T1 3
+ U3 16
+Net 14 "" ""
+ C13 2
+ U4 1
+Net 15 "" ""
+ C14 1
+ R14 1
+ U4 5
+Net 16 "" ""
+ T1 9
+ P1 1
+Net 17 "" ""
+ T1 11
+ P1 2
+Net 18 "" ""
+ P1 6
+ T1 16
+Net 19 "" ""
+ R12 1
+ U4 3
+Net 20 "" ""
+ C10 1
+ U3 2
+ X2 1
+Net 22 "+5V" "+5V"
+ R13 1
+ L1 1
+ R14 2
+ C9 1
+ U1 18
+ C14 2
+ U2 3
+ U4 6
+ U2 1
+ U1 6
+ J1 2
+ U1 4
+Net 28 "" ""
+ D2 1
+ U3 10
+Net 34 "" ""
+ U1 16
+ J1 1
+Net 35 "" ""
+ J1 3
+ U1 17
+Net 38 "" ""
+ U3 35
+ U1 27
+Net 40 "" ""
+ U1 26
+ U3 36
+Net 41 "" ""
+ U3 17
+ T1 1
+ R5 1
+Net 42 "" ""
+ U3 34
+ U1 28
+Net 43 "" ""
+ U3 37
+ U1 25
+Net 51 "" ""
+ R3 1
+ U3 11
+Net 56 "" ""
+ U3 3
+ X2 2
+ C11 1
+Net 57 "" ""
+ U3 43
+ C4 2
+Net 58 "" ""
+ X1 1
+ U1 8
+ C2 2
+Net 59 "" ""
+ U3 9
+ D1 1
+Net 60 "" ""
+ D2 2
+ R2 1
+Net 61 "" ""
+ R1 1
+ D1 2
+Net 62 "" ""
+ U1 15
+ J1 4
+Net 63 "" ""
+ U1 22
+ U1 29
+ J1 5
+Net 68 "" ""
+ C1 2
+ U1 20
+Net 70 "" ""
+ U1 7
+ C3 2
+ X1 2
+Net 71 "" ""
+ R4 2
+ U3 24
+ U1 32
+Net 72 "" ""
+ T1 8
+ R7 1
+ U3 21
+Net 73 "" ""
+ R6 2
+ R5 2
+ T1 4
+ T1 2
+ C5 2
+Net 74 "/POED" "POED"
+ T1 15
+ R9 1
+ D4 1
+Net 75 "/HighCOut" "HighCOut"
+ U4 7
+ D5 2
+ L1 2
+ C13 1
+}
+#End
