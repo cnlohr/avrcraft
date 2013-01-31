@@ -1,10 +1,10 @@
-update=Mon 28 Jan 2013 04:44:04 PM EST
+update=Thu 31 Jan 2013 12:20:57 AM EST
 last_client=pcbnew
 [pcbnew]
 version=1
 PadDrlX=0
-PadDimH=1200
-PadDimV=800
+PadDimH=230
+PadDimV=400
 BoardThickness=630
 TxtPcbV=800
 TxtPcbH=600
@@ -32,3 +32,7 @@ LibName10=dip_sockets
 LibName11=/home/cnlohr/electrical/kicad/1SMTPIN
 LibName12=/home/cnlohr/electrical/kicad/XTAL4P
 LibName13=/home/cnlohr/electrical/kicad/PanasonicD8Cap
+LibName14=/home/cnlohr/electrical/kicad/BESOP-4
+LibName15=/home/cnlohr/electrical/kicad/SM1005
+LibName16=/home/cnlohr/electrical/kicad/BOURNS-PM5022
+LibName17=/home/cnlohr/electrical/kicad/BOURNS-SRR1280
