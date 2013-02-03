@@ -1,4 +1,4 @@
-update=Fri 25 Jan 2013 03:00:35 PM EST
+update=Sun 03 Feb 2013 12:31:42 AM EST
 version=1
 last_client=eeschema
 [cvpcb]
@@ -113,3 +113,4 @@ LibName35=BELFuse_Ethernet
 LibName36=bridge-MB2S-TP
 LibName37=a4447sljtr
 LibName38=crystal-4p
+LibName39=zener-sot23-3

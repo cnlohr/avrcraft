@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Thu 31 Jan 2013 12:07:58 AM EST
+EESchema Schematic File Version 2  date Sun 03 Feb 2013 12:44:29 AM EST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -37,6 +37,7 @@ LIBS:BELFuse_Ethernet
 LIBS:bridge-MB2S-TP
 LIBS:a4447sljtr
 LIBS:crystal-4p
+LIBS:zener-sot23-3
 LIBS:avrcraft-cache
 EELAYER 25  0
 EELAYER END
@@ -44,7 +45,7 @@ $Descr A4 11700 8267
 encoding utf-8
 Sheet 1 1
 Title ""
-Date "31 jan 2013"
+Date "3 feb 2013"
 Rev ""
 Comp ""
 Comment1 ""
@@ -52,8 +53,14 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text Label 7750 6450 0    60   ~ 0
-POE+A
+Wire Wire Line
+	9900 7000 9900 7050
+Wire Wire Line
+	8750 6950 8900 6950
+Wire Wire Line
+	8900 6950 8900 5150
+Wire Wire Line
+	9900 7050 9550 7050
 Wire Wire Line
 	8750 6450 7750 6450
 Connection ~ 8550 6000
@@ -82,7 +89,7 @@ Wire Wire Line
 Connection ~ 8450 6000
 Connection ~ 9100 6050
 Wire Wire Line
-	9100 6350 9100 6050
+	9100 6050 9100 6350
 Connection ~ 3800 1800
 Wire Wire Line
 	3800 1900 3800 1800
@@ -543,7 +550,7 @@ Wire Wire Line
 	10100 6100 10100 6050
 Connection ~ 10600 6100
 Wire Wire Line
-	9250 5150 8900 5150
+	8900 5150 9250 5150
 Wire Wire Line
 	9250 5300 8750 5300
 Wire Wire Line
@@ -646,16 +653,7 @@ Wire Wire Line
 	1400 2650 1400 2800
 Wire Wire Line
 	1400 2800 2000 2800
-Wire Wire Line
-	8900 5150 8900 6750
-Wire Wire Line
-	8900 6750 9100 6750
 Connection ~ 8900 6450
-Wire Wire Line
-	8750 6950 8950 6950
-Wire Wire Line
-	8950 6950 8950 6750
-Connection ~ 8950 6750
 Wire Wire Line
 	7950 6050 7950 6000
 Connection ~ 7950 6000
@@ -673,17 +671,51 @@ Wire Wire Line
 	3200 4050 3200 3800
 Connection ~ 8750 6450
 Wire Wire Line
-	8550 6500 8450 6500
+	8900 6450 9450 6450
 Wire Wire Line
-	8450 6500 8450 6750
+	9100 6350 9900 6350
+Wire Wire Line
+	9900 6350 9900 6600
+Wire Wire Line
+	9050 7050 8300 7050
+Wire Wire Line
+	8300 7050 8300 6750
+Wire Wire Line
+	8300 6750 8450 6750
+Wire Wire Line
+	9450 6950 8950 6950
+Wire Wire Line
+	8950 6950 8950 7050
+Connection ~ 8950 7050
+$Comp
+L ZENER D?
+U 1 1 510DF933
+P 9900 6800
+F 0 "D?" H 9900 6900 50  0000 C CNN
+F 1 "ZENER" H 9900 6700 40  0000 C CNN
+	1    9900 6800
+	0    1    1    0   
+$EndComp
+$Comp
+L R R16
+U 1 1 510DEE44
+P 9300 7050
+F 0 "R16" V 9380 7050 50  0000 C CNN
+F 1 "22k" V 9300 7050 50  0000 C CNN
+F 2 "SM0603" H 9300 7050 60  0000 C CNN
+	1    9300 7050
+	0    1    1    0   
+$EndComp
+Text Label 7750 6450 0    60   ~ 0
+POE+A
 $Comp
 L R R15
 U 1 1 5109F770
-P 8550 6250
-F 0 "R15" V 8630 6250 50  0000 C CNN
-F 1 "22k" V 8550 6250 50  0000 C CNN
-F 2 "SM0603" H 8550 6250 60  0000 C CNN
-	1    8550 6250
+P 9450 6700
+F 0 "R15" V 9530 6700 50  0000 C CNN
+F 1 "47k" V 9450 6700 50  0000 C CNN
+F 2 "SM0603" H 9450 6700 60  0000 C CNN
+	1    9450 6700
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1179,7 +1211,7 @@ U 1 1 50FE1D43
 P 8650 4800
 F 0 "C6" H 8700 4900 50  0000 L CNN
 F 1 ".01u" H 8700 4700 50  0000 L CNN
-F 2 "SM0805" H 8650 4800 60  0001 C CNN
+F 2 "SM0603" H 8650 4800 60  0001 C CNN
 	1    8650 4800
 	1    0    0    -1  
 $EndComp
