@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sun 03 Feb 2013 12:44:29 AM EST
+EESchema Schematic File Version 2  date Sun 03 Feb 2013 01:57:44 AM EST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -53,6 +53,16 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+$Comp
+L ZENER-EBC3 D6
+U 1 1 510DFAA0
+P 9900 6800
+F 0 "D6" H 9900 6900 50  0000 C CNN
+F 1 "ZENER-EBC3" H 9900 6700 40  0000 C CNN
+F 2 "SOT23EBC" H 9900 6800 60  0000 C CNN
+	1    9900 6800
+	0    1    1    0   
+$EndComp
 Wire Wire Line
 	9900 7000 9900 7050
 Wire Wire Line
@@ -687,15 +697,6 @@ Wire Wire Line
 Wire Wire Line
 	8950 6950 8950 7050
 Connection ~ 8950 7050
-$Comp
-L ZENER D?
-U 1 1 510DF933
-P 9900 6800
-F 0 "D?" H 9900 6900 50  0000 C CNN
-F 1 "ZENER" H 9900 6700 40  0000 C CNN
-	1    9900 6800
-	0    1    1    0   
-$EndComp
 $Comp
 L R R16
 U 1 1 510DEE44
