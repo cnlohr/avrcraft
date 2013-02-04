@@ -6,19 +6,18 @@
 #include <util/delay.h>
 #include <avr/pgmspace.h>
 #include <avr/sleep.h>
-
+#include "video.h"
 #include "ntscfont.h"
 
 #define DO_2X
 #define STUPID_FAST_ASM
 //#define SLOW_SOME
-#define WIDTH 48
-#define LINES 25
 
 //XXX TODO: Consider slicing apart the font into separate scan lines.
 
 
-volatile char framebuffer[WIDTH*LINES];
+volatile char framebuffer[NTWIDTH*NTLINES];
+unsigned char videobeep;
 
 void VSync()
 {
@@ -43,17 +42,18 @@ void VideoLine( )
 SPSR |= _BV(SPI2X);
 #endif
 
-	if( thisline < 15 || thisline > 215 )
+	if( thisline < 19 || thisline > 211 )
 	{
+		if( thisline == 19 && videobeep ) videobeep--;
 		goto end;
 	}
-	thisline -= 16;
-	charsleft = WIDTH;
+	thisline -= 20;
+	charsleft = NTWIDTH;
 	
 	rline = thisline >> 3;
 	pline = (thisline)&0x7;
 
-	rline *= WIDTH;
+	rline *= NTWIDTH;
 
 	SPDR = 0x00;
 
@@ -103,9 +103,8 @@ SPSR |= _BV(SPI2X);
 		SPDR = c;
 	} while( 1 );
 #endif
-
 end:
-	_delay_us(.6);
+	_delay_us(.4);
 	PORTB &= ~_BV(3);
 	SPCR &= ~( _BV(SPE) | _BV(MSTR) );
 }

@@ -8,7 +8,7 @@
 
 #include "ntsc.h"
 #include <stdio.h>
-
+#include "video.h"
 
 void SetupClock()
 {
@@ -27,13 +27,14 @@ int main() {
 	SetupClock();
 	sei();
 
-	for( tf = 0; tf < 48*25; tf++ )
+	for( tf = 0; tf < 48*24; tf++ )
 	{
 		framebuffer[tf] = tf;
 	}
 
 	while(1)
 	{
+		if( (tf&0xfff) == 0 ) videobeep=3;
 		sprintf( framebuffer, "%d", tf++ );
 	}
 }

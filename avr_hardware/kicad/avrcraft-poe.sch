@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sun 03 Feb 2013 04:18:20 PM EST
+EESchema Schematic File Version 2  date Sun 03 Feb 2013 07:08:31 PM EST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -26,19 +26,19 @@ LIBS:display
 LIBS:cypress
 LIBS:siliconi
 LIBS:opto
+LIBS:atmel
 LIBS:contrib
 LIBS:valves
-LIBS:atmel_kk
-LIBS:enc424j600
+LIBS:a4447sljtr
 LIBS:atmega48_88_168_328_tqfp32
-LIBS:mcp1824_ct
+LIBS:atmel_kk
 LIBS:avr6pin
 LIBS:BELFuse_Ethernet
 LIBS:bridge-MB2S-TP
-LIBS:a4447sljtr
 LIBS:crystal-4p
+LIBS:enc424j600
+LIBS:mcp1824_ct
 LIBS:zener-sot23-3
-LIBS:avrcraft-cache
 EELAYER 25  0
 EELAYER END
 $Descr A4 11700 8267

@@ -8,7 +8,7 @@
 #include "iparpetc.h"
 #include "enc424j600.h"
 #include <alloca.h>
-
+#include <string.h>
 
 
 unsigned char macfrom[6];
@@ -78,20 +78,36 @@ static void HandleICMP()
 	unsigned short payload_from_start, payload_dest_start;
 
 	type = POP;
-	enc424j600_dumpbytes(3);
-//	id = POP16;
-//	seqnum = POP16;
-
-//Tricky: We would ordinarily POPB to read out the payload, but we're using
-//the DMA engine to copy that data.
-//	POPB( payload, payloadsize );
-	//Suspend reading for now (but don't allow over-writing of the data)
-	enc424j600_stopop();
-	payload_from_start = enc424j600_read_ctrl_reg16( EERXRDPTL );
+	POP; //code
+	POP16; //Checksum
 
 	switch( type )
 	{
+#ifdef PING_CLIENT_SUPPORT
+	case 0: //Response
+{
+		uint16_t id;
+
+		id = POP16;
+		if( id < PING_RESPONSES_SIZE )
+		{
+			ClientPingEntries[id].last_recv_seqnum = POP16; //Seqnum
+		}
+		enc424j600_stopop();
+
+		enc424j600_finish_callback_now();
+}
+		break;
+#endif
+
 	case 8: //ping request
+
+		//Tricky: We would ordinarily POPB to read out the payload, but we're using
+		//the DMA engine to copy that data.
+		//	POPB( payload, payloadsize );
+		//Suspend reading for now (but don't allow over-writing of the data)
+		enc424j600_stopop();
+		payload_from_start = enc424j600_read_ctrl_reg16( EERXRDPTL );
 
 		enc424j600_startsend( 0 );
 		send_etherlink_header( 0x0800 );
@@ -138,7 +154,7 @@ static void HandleArp( )
 	POP16; //Hardware type
 	proto = POP16;
 	POP16; //hwsize, protosize
-	opcode = POP16;
+	opcode = POP16;  //XXX: This includes "code" as well, it seems.
 
 	switch( opcode )
 	{
@@ -179,6 +195,31 @@ static void HandleArp( )
 
 		break;
 }
+#ifdef ARP_CLIENT_SUPPORT
+	case 2: //ARP Reply
+{
+		uint8_t sender_mac_and_ip_and_comp_mac[16];
+		POPB( sender_mac_and_ip_and_comp_mac, 16 );
+		enc424j600_finish_callback_now();
+
+
+		//First, make sure that we're the ones who are supposed to receive the ARP.
+		for( i = 0; i < 6; i++ )
+		{
+			if( sender_mac_and_ip_and_comp_mac[i+10] != MyMAC[i] )
+				break;
+		}
+
+		if( i != 6 )
+			break;
+
+		//We're the right recipent.  Put it in the table.
+		memcpy( &ClientArpTable[ClientArpTablePointer], sender_mac_and_ip_and_comp_mac, 10 );
+
+		ClientArpTablePointer = (ClientArpTablePointer+1)%ARP_CLIENT_TABLE_SIZE;
+}
+#endif
+
 	default:
 		//???? don't know what to do.
 		return;
@@ -309,4 +350,104 @@ void util_finish_udp_packet( )// unsigned short length )
 
 
 #endif
+
+
+#ifdef ARP_CLIENT_SUPPORT
+
+int8_t RequestARP( uint8_t * ip )
+{
+	uint8_t i;
+
+	for( i = 0; i < ARP_CLIENT_TABLE_SIZE; i++ )
+	{
+		if( strncmp( (char*)&ClientArpTable[i].ip, ip, 4 ) == 0 ) //XXX did I mess up my casting?
+		{
+			return i;
+		}
+	}
+
+	//Set the address we want to send to (broadcast)
+	for( i = 0; i < 6; i++ )
+		macfrom[i] = 0xff;
+
+	//No MAC Found.  Send an ARP request.
+	enc424j600_finish_callback_now();
+	enc424j600_startsend( 0 );
+	send_etherlink_header( 0x0806 );
+
+	PUSH16( 0x0001 ); //Ethernet
+	PUSH16( 0x0800 ); //Protocol (IP)
+	PUSH16( 0x0604 ); //HW size, Proto size
+	PUSH16( 0x0001 ); //Request
+
+	PUSHB( MyMAC, 6 );
+	PUSHB( MyIP, 4 );
+	PUSH16( 0x0000 );
+	PUSH16( 0x0000 );
+	PUSH16( 0x0000 );
+	PUSHB( ip, 4 );
+
+	enc424j600_endsend();
+
+	return -1;
+}
+
+struct ARPEntry ClientArpTable[ARP_CLIENT_TABLE_SIZE];
+uint8_t ClientArpTablePointer = 0;
+
+#endif
+
+#ifdef PING_CLIENT_SUPPORT
+
+struct PINGEntries ClientPingEntries[PING_RESPONSES_SIZE];
+
+int8_t GetPingslot( uint8_t * ip )
+{
+	uint8_t i;
+	for( i = 0; i < PING_RESPONSES_SIZE; i++ )
+	{
+		if( !ClientPingEntries[i].id ) break;
+	}
+
+	if( i == PING_RESPONSES_SIZE )
+		return -1;
+
+	memcpy( ClientPingEntries[i].ip, ip, 4 );
+	return i;
+}
+
+void DoPing( uint8_t pingslot )
+{
+	unsigned short ppl;	
+	uint16_t seqnum = ++ClientPingEntries[pingslot].last_send_seqnum;
+	uint16_t checksum = (seqnum + pingslot + 0x0800) ;
+
+	int8_t arpslot = RequestARP( ClientPingEntries[pingslot].ip );
+
+	if( arpslot < 0 ) return;
+
+	//must set macfrom to be the IP address of the target.
+	memcpy( macfrom, ClientArpTable[arpslot].mac, 6 );
+
+	enc424j600_startsend( 0 );
+	send_etherlink_header( 0x0800 );
+	send_ip_header( 32, ClientPingEntries[pingslot].ip, 0x01 );
+
+	PUSH16( 0x0800 ); //ping request + 0 for code
+	PUSH16( ~checksum ); //Checksum
+	PUSH16( pingslot ); //Idneitifer
+	PUSH16( seqnum ); //Sequence number
+
+	PUSH16( 0x0000 ); //Payload
+	PUSH16( 0x0000 );
+
+	enc424j600_start_checksum( 8, 20 );
+	ppl = enc424j600_get_checksum();
+	enc424j600_alter_word( 18, ppl );
+
+	enc424j600_endsend();
+}
+
+#endif
+
 
