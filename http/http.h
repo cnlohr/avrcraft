@@ -4,7 +4,13 @@
 #define _HTTP_H
 
 #include <stdint.h>
+#include <eth_config.h>
+
+#ifdef HTTP_USE_MEMORY_FS
+#include <mfs.h>
+#else
 #include "basicfat.h"
+#endif
 #include "enc424j600.h"
 
 #ifdef INCLUDE_HTTP_SERVER
@@ -61,7 +67,11 @@ struct HTTPConnection
 
 	union data_t
 	{
+#ifdef HTTP_USE_MEMORY_FS
+		struct MFSFileInfo filedescriptor;
+#else
 		struct FileInfo filedescriptor;
+#endif
 		struct UserData { uint16_t a, b, c; } user;
 	} data;
 

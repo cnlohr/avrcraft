@@ -1,6 +1,9 @@
 all : program.hex burn program.lst
 CC = avr-gcc
 
+#just a random note: use this to benchmark
+#curl -s -w "\nResponse time:\t%{time_total}s\n"  -o /dev/null http://192.168.0.142/png.png
+
 SRCS = example.c  \
 	../libs/avr_print.c \
 	../ipcore/enc424j600.c \
@@ -9,12 +12,17 @@ SRCS = example.c  \
 	../ipcore/tcp.c \
 	../libs/util10.c \
 	../http/http.c \
-	../microsd/microsd.c \
-	../microsd/basicfat.c
+	../mfs/mfs.c \
+	myfiles.c
+#	../microsd/microsd.c \
+#	../microsd/basicfat.c \
+
+myfiles.c : page ../mfs/mfsmaker
+	../mfs/mfsmaker $< $@
 
 PROCESSOR=atmega328
 PROGRAMCODE=m328
-COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft
+COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft -I../mfs
 CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=20000000UL -DMUTE_PRINTF #-DNO_HTTP #-Wall  
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c

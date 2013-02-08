@@ -108,7 +108,8 @@ void HTTPCustomCallback( )
 		TCPs[h->socket].sendtype = ACKBIT | PSHBIT;
 		StartTCPWrite( h->socket );
 		//TODO: Content Length?  MIME-Type?
-		PushStr( "HTTP/1.1 200 Ok\r\nConnection: close\r\n\r\nHello, World!" );
+		PushStr( "HTTP/1.1 200 Ok\r\nConnection: close\r\n\r\nHello, World!\r\n" );
+		PushStr( h->pathbuffer );
 		EndTCPWrite( h->socket );
 		h->isfirst = 0;
 		h->isdone = 1;
@@ -141,12 +142,14 @@ int main( void )
 	#endif
 	OCR2A = T2CNT;
 
+#ifndef HTTP_USE_MEMORY_FS
 	if( initSD() )
 	{
 		sendstr( "Fatal error. Cannot open SD card.\n" );
 	}
 
 	openFAT();
+#endif
 
 	sei();
 

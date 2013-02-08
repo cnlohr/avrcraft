@@ -89,6 +89,7 @@
 #define INCLUDE_HTTP_SERVER
 #define HTTP_SERVER_TIMEOUT (10000) 
 #define HTTP_CONNECTIONS 6
+#define HTTP_USE_MEMORY_FS
 
 
 //Scratchpad for sending out packets like UDP, ICMP, ARP, etc.

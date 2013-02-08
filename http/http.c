@@ -1,7 +1,6 @@
 #include "http.h"
 #include <tcp.h>
 #include <avr_print.h>
-#include <basicfat.h>
 #include <string.h>
 #include <util10.h>
 #include <avr/pgmspace.h>
@@ -202,6 +201,16 @@ void HTTPHandleInternalCallback( )
 	}
 
 	StartTCPWrite( curhttp->socket );
+#ifdef HTTP_USE_MEMORY_FS
+	MFSStartReadFile( &curhttp->data.filedescriptor );
+
+	bytestoread = ((curhttp->bytesleft)>512)?512:curhttp->bytesleft;
+	for( i = 0; i < bytestoread; i++ )
+	{
+		enc424j600_push8( MFSRead8() );	
+	}
+#else
+
 #ifdef FAST_SECTOR_TRANSFER
 	StartReadFAT_SA( &curhttp->data.filedescriptor );
 
@@ -224,7 +233,7 @@ void HTTPHandleInternalCallback( )
 
 	EndReadFAT();
 #endif
-
+#endif
 	EndTCPWrite( curhttp->socket );
 
 	curhttp->bytesleft -= bytestoread;
@@ -237,7 +246,7 @@ void HTTPHandleInternalCallback( )
 static void InternalStartHTTP( )
 {
 	int32_t clusterno;
-	uint8_t i;
+	int8_t i;
 	const char * path = &curhttp->pathbuffer[0];
 
 	if( curhttp->pathbuffer[0] == '/' )
@@ -253,7 +262,43 @@ static void InternalStartHTTP( )
 		return;
 	}
 
+#ifdef HTTP_USE_MEMORY_FS
+	if( !path[0] )
+	{
+		path = "index.html";
+	}
+	i = MFSOpenFile( path, &curhttp->data.filedescriptor );
+	curhttp->bytessofar = 0;
 
+	sendchr( 0 );
+	sendstr( "Getting: " );
+	sendstr( path );
+	sendhex4( clusterno );
+	sendchr( '\n' );
+
+	if( i < 0 )
+	{
+		sendstr( "404\n" );
+		curhttp->is404 = 1;
+		curhttp->isfirst = 1;
+		curhttp->isdone = 0;
+		curhttp->is_dynamic = 0;
+	}
+	else
+	{
+		sendstr( "Found" );
+		curhttp->isfirst = 1;
+		curhttp->isdone = 0;
+		curhttp->is404 = 0;
+		curhttp->is_dynamic = 0;
+		curhttp->bytesleft = curhttp->data.filedescriptor.filelen;
+		sendhex4( curhttp->bytesleft );
+		sendstr( "\n\n" );
+	}
+
+
+
+#else
 	clusterno = FindClusterFileInDir( path, ROOT_CLUSTER, -1, &curhttp->bytesleft );
 	curhttp->bytessofar = 0;
 
@@ -279,6 +324,7 @@ static void InternalStartHTTP( )
 		curhttp->is404 = 0;
 		curhttp->is_dynamic = 0;
 	}
+#endif
 
 //	sendstr( "Internal Start HTTP\n" );
 }
