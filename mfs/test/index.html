@@ -1,0 +1,30 @@
+
+<HTML>
+<HEAD>
+<LINK href="theme.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY ondragover="console.log( event );" ondrop="console.log( event );">
+This is a test page for my AVR.
+<BR>
+
+<DIV class=dwindow draggable=true ondragstart="console.log( event ); event.dataTransfer.setData('Text', this.id);">
+<TABLE>
+<TR>
+<TH>Title</TH>
+</TR>
+<TR>
+<TD>Body</TD>
+</TR>
+</TABLE>
+</DIV>
+
+
+<img id="drag1" src="img_logo.gif" draggable="true"
+ondragstart="console.log(event)" width="336" height="69">
+
+<div id="div1" ondrop="drop(event)"
+ondragover="console.log(event); return true">Hello</div>
+
+
+</BODY>
+</HTML>

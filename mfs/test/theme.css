@@ -1,0 +1,16 @@
+/* http://colorschemedesigner.com/#0V21Qw0w0w0w0 */
+
+div.dwindow { position:absolute; top:0; right:0; width:200px; 
+}
+
+[draggable=true] {
+  -khtml-user-drag: element;
+  -webkit-user-drag: element;
+}
+
+table { box-shadow: 1px 1px 1px #000; background-color: #05296E }
+th { background-color: #6B8FD4; color:#000000 }
+td { background-color: #ffA700; color:#000000 }
+body { background-color: #1144AA; color:#ffffff }
+
+
