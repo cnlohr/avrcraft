@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sun 03 Feb 2013 07:08:31 PM EST
+EESchema Schematic File Version 2  date Sat 09 Feb 2013 02:58:00 PM EST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -39,13 +39,14 @@ LIBS:crystal-4p
 LIBS:enc424j600
 LIBS:mcp1824_ct
 LIBS:zener-sot23-3
+LIBS:avrcraft-poe-cache
 EELAYER 25  0
 EELAYER END
 $Descr A4 11700 8267
 encoding utf-8
 Sheet 1 1
 Title ""
-Date "3 feb 2013"
+Date "9 feb 2013"
 Rev ""
 Comp ""
 Comment1 ""
@@ -53,6 +54,11 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Wire Wire Line
+	1700 3200 1700 2600
+Connection ~ 1700 2700
+Wire Wire Line
+	2000 2700 1700 2700
 Wire Wire Line
 	9650 4400 9800 4400
 Wire Wire Line
@@ -125,10 +131,6 @@ Wire Wire Line
 Wire Wire Line
 	4050 1300 4050 1350
 Connection ~ 1700 3200
-Wire Wire Line
-	2000 2700 1700 2700
-Wire Wire Line
-	1700 2700 1700 3200
 Connection ~ 6200 6350
 Wire Wire Line
 	6200 6350 6200 6850

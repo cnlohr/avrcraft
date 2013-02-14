@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Tue 12 Feb 2013 09:33:11 PM EST
+EESchema Schematic File Version 2  date Wed 13 Feb 2013 10:58:59 AM EST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -56,17 +56,13 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Wire Wire Line
+	5350 2350 5350 850 
+Wire Wire Line
+	5350 2350 4900 2350
 Connection ~ 3900 1600
 Wire Wire Line
 	4700 1600 3700 1600
-Wire Wire Line
-	5050 1600 5050 2350
-Wire Wire Line
-	5050 2350 4900 2350
-Wire Wire Line
-	4900 2550 5350 2550
-Wire Wire Line
-	5350 2550 5350 850 
 Wire Wire Line
 	5350 850  7550 850 
 Connection ~ 4400 3600
@@ -687,6 +683,10 @@ Wire Wire Line
 	5200 2450 5200 1600
 Wire Wire Line
 	3900 1700 3900 1600
+Wire Wire Line
+	5050 1600 5050 2550
+Wire Wire Line
+	5050 2550 4900 2550
 $Comp
 L CONN_1 P9
 U 1 1 511AF779
@@ -932,7 +932,7 @@ L R R16
 U 1 1 511425C6
 P 3100 5050
 F 0 "R16" V 3180 5050 50  0000 C CNN
-F 1 "270" V 3100 5050 50  0000 C CNN
+F 1 "680" V 3100 5050 50  0000 C CNN
 F 2 "SM0603" H 3100 5050 60  0000 C CNN
 	1    3100 5050
 	1    0    0    -1  
