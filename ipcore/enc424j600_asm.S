@@ -15,9 +15,23 @@
 .global espiR_asm
 espiR_asm:
 
-//Return value in R24
 
 #ifdef ASM_REALLY_FAST_SPI
+#define ASM_REALLY_FAST_SPI_R
+#define ASM_REALLY_FAST_SPI_W
+#endif
+
+//This is odd, but at high clock speeds, we need to look
+//after the falling edge because we didn't give the chip
+//enough time to respond.  This is usually only a problem
+//when exceeding 20 MHz, but because it still works at 8
+//I decided to use it all the time.
+#ifdef ASM_REALLY_FAST_SPI_R
+#define ASM_REALLY_FAST_SPI_R_SPEEDPHASE
+#endif
+
+//Return value in R24
+#ifdef ASM_REALLY_FAST_SPI_R_SPEEDPHASE
 	in r18, ETPORT
 	andi r18, ~(ETSCK)
 	mov r19, r18
@@ -26,34 +40,110 @@ espiR_asm:
 	clr r24
 	out ETPORT, r18
 	out ETPORT, r19
+
+	out ETPORT, r18
+	sbic ETPIN, ETSOP
+	ori r24, 0x80
+	out ETPORT, r19
+
+	out ETPORT, r18
+	sbic ETPIN, ETSOP
+	ori r24, 0x40
+	out ETPORT, r19
+
+	out ETPORT, r18
+	sbic ETPIN, ETSOP
+	ori r24, 0x20
+	out ETPORT, r19
+
+	out ETPORT, r18
+	sbic ETPIN, ETSOP
+	ori r24, 0x10
+	out ETPORT, r19
+
+	out ETPORT, r18
+	sbic ETPIN, ETSOP
+	ori r24, 0x08
+	out ETPORT, r19
+
+	out ETPORT, r18
+	sbic ETPIN, ETSOP
+	ori r24, 0x04
+	out ETPORT, r19
+
+	out ETPORT, r18
+	sbic ETPIN, ETSOP
+	ori r24, 0x02
+	out ETPORT, r19
+
+	out ETPORT, r18
+	sbic ETPIN, ETSOP
+	ori r24, 0x01
+
+
+	ret
+
+#elif defined( ASM_REALLY_FAST_SPI_R )
+	in r18, ETPORT
+	andi r18, ~(ETSCK)
+	mov r19, r18
+	ori r19, ETSCK
+
+	clr r24
+	out ETPORT, r18
+	out ETPORT, r19
+#ifdef ADD_WAIT_IN_READ
+	nop
+#endif
 	sbic ETPIN, ETSOP
 	ori r24, 0x80
 	out ETPORT, r18
 	out ETPORT, r19
+#ifdef ADD_WAIT_IN_READ
+	nop
+#endif
 	sbic ETPIN, ETSOP
 	ori r24, 0x40
 	out ETPORT, r18
 	out ETPORT, r19
+#ifdef ADD_WAIT_IN_READ
+	nop
+#endif
 	sbic ETPIN, ETSOP
 	ori r24, 0x20
 	out ETPORT, r18
 	out ETPORT, r19
+#ifdef ADD_WAIT_IN_READ
+	nop
+#endif
 	sbic ETPIN, ETSOP
 	ori r24, 0x10
 	out ETPORT, r18
 	out ETPORT, r19
+#ifdef ADD_WAIT_IN_READ
+	nop
+#endif
 	sbic ETPIN, ETSOP
 	ori r24, 0x08
 	out ETPORT, r18
 	out ETPORT, r19
+#ifdef ADD_WAIT_IN_READ
+	nop
+#endif
 	sbic ETPIN, ETSOP
 	ori r24, 0x04
 	out ETPORT, r18
 	out ETPORT, r19
+#ifdef ADD_WAIT_IN_READ
+	nop
+#endif
 	sbic ETPIN, ETSOP
 	ori r24, 0x02
 	out ETPORT, r18
 	out ETPORT, r19
+#ifdef ADD_WAIT_IN_READ
+	nop
+#endif
 	sbic ETPIN, ETSOP
 	ori r24, 0x01
 	out ETPORT, r18
@@ -100,7 +190,7 @@ espiR_asm:
 
 .global espiW_asm
 espiW_asm:
-#ifdef ASM_REALLY_FAST_SPI
+#ifdef ASM_REALLY_FAST_SPI_W
 
 
 	in r18, ETPORT

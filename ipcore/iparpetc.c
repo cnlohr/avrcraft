@@ -122,8 +122,11 @@ static void HandleICMP()
 		//Ordinarily, we'd PUSHB for the payload, but we're currently using the DMA engine for our work here.
 		enc424j600_stopop();
 		payload_dest_start = enc424j600_read_ctrl_reg16( EEGPWRPTL );
-		enc424j600_copy_memory( payload_dest_start, payload_from_start, payloadsize + 4, RX_BUFFER_START, RX_BUFFER_END-1 );  //+4 = id + seqnum (we're DMAing that, too)
-		enc424j600_write_ctrl_reg16( EEGPWRPTL, payload_dest_start + payloadsize + 4 );//+4 = id + seqnum (we're DMAing that, too)
+
+		//+4 = id + seqnum (we're DMAing that, too)
+		enc424j600_copy_memory( payload_dest_start, payload_from_start, payloadsize + 4, RX_BUFFER_START, RX_BUFFER_END-1 );  
+		enc424j600_write_ctrl_reg16( EEGPWRPTL, payload_dest_start + payloadsize + 4 );
+
 		enc424j600_finish_callback_now();
 
 		//Calculate header and ICMP checksums
