@@ -13,9 +13,9 @@ SRCS = example.c  \
 	../libs/util10.c \
 	../http/http.c \
 	../mfs/mfs.c \
-	myfiles.c
-#	../microsd/microsd.c \
-#	../microsd/basicfat.c \
+	../microsd/microsd.c \
+	../microsd/basicfat.c \
+#	myfiles.c
 
 myfiles.c : page ../mfs/mfsmaker
 	../mfs/mfsmaker $< $@
@@ -23,7 +23,7 @@ myfiles.c : page ../mfs/mfsmaker
 PROCESSOR=atmega328
 PROGRAMCODE=m328
 COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft -I../mfs
-CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=20000000UL -DMUTE_PRINTF #-DNO_HTTP #-Wall  
+CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=28636000UL -DMUTE_PRINTF #-DNO_HTTP #-Wall  
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c
 EXTRA_LD_FLAGS=-Wl,--relax -Wa,-a,-ad -mcall-prologues 
@@ -50,6 +50,9 @@ readfuses :
 	#use crystal on mega48/168
 burnfuses :
 	avrdude -c usbtiny -p $(PROGRAMCODE) -U lfuse:w:0xE6:m -U hfuse:w:0xDF:m
+
+burnfuses_slow :
+	avrdude -c usbtiny -p $(PROGRAMCODE) -U lfuse:w:0x62:m -U hfuse:w:0xD9:m
 
 clean : 
 	rm -f *~ high.txt low.txt program.hex program.map program.elf $(OBJS) *.o usbdrv/*.o usbdrv/*~ program.lst

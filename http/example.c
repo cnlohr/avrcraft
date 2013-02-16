@@ -93,6 +93,26 @@ void HTTPCustomStart( )
 	h->isfirst = 1;
 }
 
+uint8_t hex2val( unsigned char c )
+{
+	if( c >= '0' && c <= '9' )
+		return c - '0';
+	else if( c >= 'a' && c <= 'f' )
+		return c - 'a' + 10;
+	else if( c >= 'A' && c <= 'F' )
+		return c - 'A' + 10;
+	else
+		return 0;
+}
+
+void int8tohex( unsigned char v, char * data )
+{
+	unsigned char nibble = v>>4;
+	data[0] = (nibble<10)?(nibble+'0'):(nibble+'a'-10);
+	nibble = v&0x0f;
+	data[1] = (nibble<10)?(nibble+'0'):(nibble+'a'-10);
+}
+
 void HTTPCustomCallback( )
 {
 	uint16_t i, bytestoread;
@@ -108,8 +128,71 @@ void HTTPCustomCallback( )
 		TCPs[h->socket].sendtype = ACKBIT | PSHBIT;
 		StartTCPWrite( h->socket );
 		//TODO: Content Length?  MIME-Type?
-		PushStr( "HTTP/1.1 200 Ok\r\nConnection: close\r\n\r\nHello, World!\r\n" );
-		PushStr( h->pathbuffer );
+		PushStr( "HTTP/1.1 200 Ok\r\nConnection: close\r\n\r\n" );
+
+		if( strncmp( h->pathbuffer, "/d/r1?", 6 ) == 0 )
+		{
+			char outb[3] = {0, 0, 0};
+			char * bp = h->pathbuffer + 6;
+			unsigned char address = 0;
+			address += hex2val( *(bp++) )<<4;
+			address += hex2val( *(bp++) );
+
+			unsigned char * cc = (unsigned char*)address;
+
+			int8tohex( *cc, outb );
+			PushStr( outb );
+		}
+		else if( strncmp( h->pathbuffer, "/d/w1?", 6 ) == 0 )
+		{
+			char * bp = h->pathbuffer + 6;
+			unsigned char address = 0;
+			address += hex2val( *(bp++) )<<4;
+			address += hex2val( *(bp++) );
+
+			unsigned char value = 0;
+			value += hex2val( *(bp++) )<<4;
+			value += hex2val( *(bp++) );
+
+			unsigned char * cc = (unsigned char*)address;
+			*cc = value;
+		}
+		else if( strncmp( h->pathbuffer, "/d/r2?", 6 ) == 0 )
+		{
+			char outb[3] = {0, 0, 0};
+			char * bp = h->pathbuffer + 6;
+			unsigned char address = 0;
+			address += hex2val( *(bp++) )<<4;
+			address += hex2val( *(bp++) );
+
+			unsigned short * cc = (unsigned char*)address;
+			unsigned short vo = *cc;
+			int8tohex( vo>>8, outb );
+			PushStr( outb );
+			int8tohex( vo&0xff, outb );
+			PushStr( outb );
+		}
+		else if( strncmp( h->pathbuffer, "/d/w2?", 6 ) == 0 )
+		{
+			char * bp = h->pathbuffer + 6;
+			unsigned char address = 0;
+			address += hex2val( *(bp++) )<<4;
+			address += hex2val( *(bp++) );
+
+			unsigned short value = 0;
+			value += hex2val( *(bp++) )<<12;
+			value += hex2val( *(bp++) )<<8;
+			value += hex2val( *(bp++) )<<4;
+			value += hex2val( *(bp++) );
+
+			unsigned short * cc = (unsigned char*)address;
+			*cc = value;
+		}
+		else
+		{
+			PushStr( "Hello, World!\r\n" );
+			PushStr( h->pathbuffer );
+		}
 		EndTCPWrite( h->socket );
 		h->isfirst = 0;
 		h->isdone = 1;
@@ -123,12 +206,13 @@ int main( void )
 {
 	uint8_t delayctr;
 	uint8_t marker;
+restart:
 
 	//Input the interrupt.
 	DDRD &= ~_BV(2);
 	cli();
 	setup_spi();
-	sendstr( "HELLO\n" );
+	sendstr( "#\n" );
 	setup_clock();
 
 	//Configure T2 to "overflow" at 100 Hz, this lets us run the TCP clock
@@ -157,8 +241,10 @@ int main( void )
 	DDRC &= 0;
 	if( enc424j600_init( MyMAC ) )
 	{
-		sendstr( "Failure.\n" );
-		while(1);
+		sendstr( "!\n" );
+		goto restart;
+		//return -5;
+		//while(1);
 	}
 	sendstr( "OK.\n" );
 
