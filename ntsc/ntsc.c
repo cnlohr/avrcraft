@@ -49,15 +49,53 @@ unsigned char frame;
 #define CORRECTIVE_TIMING
 
 #ifdef CORRECTIVE_TIMING
-#define EXACT_TCNT_FOR_SYNC (INTVEL(110*FREQ_REL) + 0)
+#define TIMING_OFFSET 1
+#define TCNT_OFFSET_SYNC -5
+#define TCNT_OFFSET_LINE -2
+#define EXACT_TCNT_FOR_SYNC (INTVEL(126*FREQ_REL) + 0)
+#define EXACT_TCNT_FOR_LINE (INTVEL(126*FREQ_REL) + 0)
 #else
 #define EXACT_TCNT_FOR_SYNC (INTVEL(126*FREQ_REL) + 0)
+#define EXACT_TCNT_FOR_LINE (INTVEL(126*FREQ_REL) + 0)
 #endif
 
 //Triggered on new line
 ISR(TIMER1_COMPA_vect )
 {
-	//NTSC_PORT = SYNC_LEVEL;
+#ifdef CORRECTIVE_TIMING
+
+//Some scary code that makes sure we wait the correct amount of time.
+//First we calculate what the difference should be, then we get our PC
+//by popping the call.  Additionally, we move ahead the aproprate amount
+//in localwaits.
+asm volatile( "\
+\n\t	push r16 \
+\n\t	push r17 \
+\n\t    push r30 \
+\n\t    push r31 \
+\n\t	lds r16, %0 \
+\n\t    add r16, %1 \
+\n\t    subi r16, %2 \
+\n\t    andi r16, 3 \
+\n\t    call toloop \
+\n\t toloop: \
+\n\t    pop r31 \
+\n\t    pop r30  \
+\n\t    adiw r30, (localwaits - toloop - 5) \
+\n\t    add r30, r16 \
+\n\t    adc r31, __zero_reg__ \
+\n\t    ijmp \
+\n\t localwaits: \
+\n\t    nop \n nop \n nop \n nop \n \
+\n\t lblout: \
+\n\t    pop r31 \
+\n\t    pop r30 \
+\n\t	pop r17 \
+\n\t	pop r16 \
+\n\t	" : : "i" (&TCNT1L), "i" ((uint8_t)TIMING_OFFSET), "i" ((uint8_t)TCNT_OFFSET_SYNC) );
+
+#endif
+
 	MAKE_NTSC_SYNC;
 
 	if( cline )
@@ -160,81 +198,42 @@ ISR(TIMER1_COMPB_vect )
 
 #ifdef CORRECTIVE_TIMING 
 
-//Timing based on TCNT1L (%0)
-/*
-	asm voltile( "\
-\n\t	push r16 \
-\n\t	push r17 \
-\n\t	lds r16, %2 \
-\n\t    cpi r16, %3 \
-\n\t    brne lblout \
-\n\t	lds r16, %0 \
-\n\t    andi r16, 3 \
-\n\t    dec r16 \
-\n\t    breq lbl1a \
-\n\t    dec r16 \
-\n\t    breq lbl1b \
-\n\t    dec r16 \
-\n\t    breq lbl1c \
-\n\t    nop \n nop \nnop \n nop \n  \
-\n\t    rjmp lblout \
-\n\t lbl1a: \
-\n\t    nop \n nop \nnop \n nop \n nop \n nop \n  \
-\n\t    rjmp lblout \
-\n\t lbl1b: \
-\n\t    nop \n nop \n nop \n nop \n nop \n nop \n nop \n  \
-\n\t    rjmp lblout \
-\n\t lbl1c: \
-\n\t    nop \n nop \n nop \n nop \n nop \n nop \n   \
-\n\t lblout:\
-\n\t	pop r17 \
-\n\t	pop r16 \
-	" : : "i" (&TCNT1L), "i" ((uint8_t)EXACT_TCNT_FOR_SYNC + 56), "i" (&OCR1B), "i" ((uint8_t)EXACT_TCNT_FOR_SYNC) );
-*/
 
-#define TIMING_OFFSET 1
-
-	asm volatile( "\
+asm volatile( "\
 \n\t	push r16 \
 \n\t	push r17 \
 \n\t    push r30 \
 \n\t    push r31 \
 \n\t	lds r16, %0 \
 \n\t    add r16, %1 \
-\n\t    subi r16, -2 \
+\n\t    subi r16, %2 \
 \n\t    andi r16, 3 \
-\n\t    call toloop /*For some reason we can't load Z with the labels??) */ \
-\n\t toloop: \
+\n\t    call toloop \
+\n\t toloopc: \
 \n\t    pop r31 \
 \n\t    pop r30  \
-\n\t    adiw r30, (localwaits - toloop - 5) \
+\n\t    adiw r30, (localwaitsc - toloopc - %2) \
 \n\t    add r30, r16 \
 \n\t    adc r31, __zero_reg__ \
 \n\t    ijmp \
-\n\t localwaits: \
+\n\t localwaitsc: \
 \n\t    nop \n nop \n nop \n nop \n \
-\n\t lblout: \
+\n\t lbloutc: \
 \n\t    pop r31 \
 \n\t    pop r30 \
 \n\t	pop r17 \
 \n\t	pop r16 \
-\n\t	" : : "i" (&TCNT1L), "i" ((uint8_t)TIMING_OFFSET), "i" (&OCR1B), "i" ((uint8_t)EXACT_TCNT_FOR_SYNC) );
-/*
-\n\t    add r30, r16 \
-\n\t    adc r31, __zero_reg__ \
-\n\t	lds r16, %2 \
-\n\t    cpi r16, %3 \
-\n\t    brne lblout \
-\n\t    ijmp  \
+\n\t	" : : "i" (&TCNT1L), "i" ((uint8_t)TIMING_OFFSET), "i" ((uint8_t)TCNT_OFFSET_LINE) );
 
-
-*/
 
 #endif
 
 	MAKE_NTSC_BLANK;
 
 	_delay_us(4.7*FREQ_REL);
+
+	//Using color?
+
 //	TCNT2 = 0;
 //	OCR2B = 1;  //1 makes it the most vivid.
 //	DDRD |= _BV(3*FREQ_REL);
