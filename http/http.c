@@ -270,15 +270,11 @@ static void InternalStartHTTP( )
 	i = MFSOpenFile( path, &curhttp->data.filedescriptor );
 	curhttp->bytessofar = 0;
 
-	sendchr( 0 );
-	sendstr( "Getting: " );
-	sendstr( path );
-	sendhex4( clusterno );
-	sendchr( '\n' );
-
 	if( i < 0 )
 	{
-		sendstr( "404\n" );
+		sendstr( "404:" );
+		sendstr( path );
+		sendchr( '\n' );
 		curhttp->is404 = 1;
 		curhttp->isfirst = 1;
 		curhttp->isdone = 0;
@@ -286,14 +282,11 @@ static void InternalStartHTTP( )
 	}
 	else
 	{
-		sendstr( "Found" );
 		curhttp->isfirst = 1;
 		curhttp->isdone = 0;
 		curhttp->is404 = 0;
 		curhttp->is_dynamic = 0;
 		curhttp->bytesleft = curhttp->data.filedescriptor.filelen;
-		sendhex4( curhttp->bytesleft );
-		sendstr( "\n\n" );
 	}
 
 
@@ -302,15 +295,11 @@ static void InternalStartHTTP( )
 	clusterno = FindClusterFileInDir( path, ROOT_CLUSTER, -1, &curhttp->bytesleft );
 	curhttp->bytessofar = 0;
 
-	sendchr( 0 );
-	sendstr( "Getting: " );
-	sendstr( path );
-	sendhex4( clusterno );
-	sendchr( '\n' );
-
 	if( clusterno < 0 )
 	{
-		sendstr( "CLUSTERNO BAD\n" );
+		sendstr( "404:" );
+		sendstr( path );
+		sendchr( '\n' );
 		curhttp->is404 = 1;
 		curhttp->isfirst = 1;
 		curhttp->isdone = 0;
