@@ -39,7 +39,7 @@ void VideoLine( )
 	_delay_us(.5);
 //	PORTB |= _BV(3);
 //	SPDR = 0x00;
-	SPCR |= _BV(SPE) | _BV(MSTR) | _BV(DORD);// | _BV(SPR0);
+	SPCR |= _BV(SPE) | _BV(MSTR) | _BV(DORD) | _BV(CPHA);// | _BV(SPR0);
 #ifdef DO_2X
 SPSR |= _BV(SPI2X);
 #endif
