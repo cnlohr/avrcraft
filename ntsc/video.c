@@ -37,7 +37,7 @@ void VideoLine( )
 	_delay_us(.5);
 //	PORTB |= _BV(3);
 //	SPDR = 0x00;
-	SPCR |= _BV(SPE) | _BV(MSTR) | _BV(DORD);// | _BV(SPR0);
+	SPCR |= _BV(SPE) | _BV(MSTR) | _BV(DORD) | _BV(CPHA) | _BV(CPOL);// | _BV(SPR0);
 #ifdef DO_2X
 SPSR |= _BV(SPI2X);
 #endif
@@ -56,6 +56,8 @@ SPSR |= _BV(SPI2X);
 	rline *= NTWIDTH;
 
 	SPDR = 0x00;
+
+//\n\t sbrs r17, 7 \
 
 #ifdef STUPID_FAST_ASM
 	asm volatile( "\

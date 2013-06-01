@@ -27,7 +27,7 @@ program.hex : program.elf
 #	avr-gcc -c -g -Wa,-a,-ad $(CFLAGS) $^ > $@
 
 burn : program.hex
-	sudo avrdude -c usbtiny -p $(PROGRAMCODE) -U flash:w:program.hex
+	sudo avrdude -c usbtiny -p $(PROGRAMCODE) -V -U flash:w:program.hex
 
 
 readfuses :
