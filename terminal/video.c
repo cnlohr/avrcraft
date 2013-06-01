@@ -39,7 +39,8 @@ void VideoLine( )
 	_delay_us(.5);
 //	PORTB |= _BV(3);
 //	SPDR = 0x00;
-	SPCR |= _BV(SPE) | _BV(MSTR) | _BV(DORD) | _BV(CPHA);// | _BV(SPR0);
+//	SPCR |= _BV(SPE) | _BV(MSTR) | _BV(DORD) | _BV(CPHA) | _BV(CPOL);// | _BV(SPR0);
+	SPCR |= _BV(SPE) | _BV(MSTR) | _BV(DORD) | _BV(CPHA) | _BV(CPOL);// | _BV(SPR0);
 #ifdef DO_2X
 SPSR |= _BV(SPI2X);
 #endif
@@ -75,7 +76,7 @@ SPSR |= _BV(SPI2X);
 \n\t adc r31,__zero_reg__ \
 \n\t lpm r16, Z \
 \n\t sbrs r17, 7 \
-\n\t com r16 \
+\n\t /*com r16*/nop \
  "
 #ifdef SAFETY_ON_ASM_WRITE
 "\n\tRetrySend: \
