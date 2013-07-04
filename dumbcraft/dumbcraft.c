@@ -84,10 +84,13 @@ void Rstring( char * data, int16_t maxlen )
 {
 	uint16_t toread = Rshort();
 	uint16_t len = 0;
-	if( toread > maxlen ) toread = maxlen;
+	//if( toread > maxlen ) toread = maxlen;
 	while( toread-- )
 	{
-		data[len++] = Rshort();
+		if( len < maxlen )
+			data[len++] = Rshort();
+		else
+			Rshort();
 	}
 }
 
@@ -409,7 +412,6 @@ void UpdateServer()
 			StrTack( stt, &optr, "dumbcraft" ); 	stt[optr++] = 0;
 			StrTack( stt, &optr, "0" ); 	stt[optr++] = 0;   //XXX FIXME
 			StrTack( stt, &optr, "20" );                       //XXX FIXME
-
 			Sbyte( 0xff );
 
 			Sstring( stt, optr );
@@ -446,7 +448,7 @@ void TickServer()
 	dumbcraft_tick++;
 
 #ifdef DEBUG_DUMBCRAFT
-	printf( "Tick.\n" );
+//	printf( "Tick.\n" );
 #endif
 
 	//Everything in here should be broadcast to all players.
@@ -543,6 +545,9 @@ void RemovePlayer( uint8_t playerno )
 //From user to dumbcraft (you call)
 void GotData( uint8_t playerno )
 {
+#ifdef DEBUG_DUMBCRAFT
+	static uint8_t lastcmd;
+#endif
 	uint8_t cmd, i8;
 	uint16_t i16;
 	struct Player * p = &Players[playerno];
@@ -568,9 +573,8 @@ void GotData( uint8_t playerno )
 			}
 			break;
 		case 0x02:  //Player kind of wants to check out the server.
-
 			//Check protocol version
-			if( Rbyte() != 49 )
+			if( Rbyte() != PROTO_VERSION )
 			{
 				ForcePlayerClose( playerno, 'v' );
 #ifdef DEBUG_DUMBCRAFT
@@ -618,6 +622,13 @@ void GotData( uint8_t playerno )
 			p->npitch = p->pitch/45;//XXX TODO PROBABLY SLOW
 			p->onground = Rbyte();
 			break;
+		case 0x0e: //player digging.
+			Rbyte(); //action player is taking against block
+			Rint(); //block pos X
+			Rbyte(); //block pos Y
+			Rint(); //block pos Z
+			Rbyte(); //which face?
+			break;
 		case 0x0f:	//Block placement / right-click, used for levers.
 		{
 			uint8_t x = Rint();
@@ -632,31 +643,47 @@ void GotData( uint8_t playerno )
 			PlayerClick( playerno, x, y, z );
 			break;
 		}
-		case 0xfe: //We probably should respond more intelligently, but for now.
-		{
-			Rbyte(); //magic?
-			p->need_to_send_playerlist = 1;
+		case 0x12: //animation
+			Rint(); //pid
+			Rbyte(); //animation id
 			break;
-		}
 		case 0x13: //what is this? Entity action?
 		{
 			Rint();
 			Rbyte();
 			break;
 		}
+
+		case 0xfe: //We probably should respond more intelligently, but for now.
+		{
+			Rbyte(); //magic?
+			p->need_to_send_playerlist = 1;
+			break;
+		}
+		case 0xcc: //language or something?
+		{
+			Rstring( 0, 0 );
+			Rint();
+			break;
+		}
 		default:
 #ifdef DEBUG_DUMBCRAFT
-			printf( "UCMD: %02x\n", cmd );
+			printf( "UCMD: (LAST) %02x - NOW: %02x\n", lastcmd, cmd );
 			printf( "UPKT:\n" );
 			//for( i16 = thisptr; i16 < packetsize; i16++ )	
 			while( CanRead() )
 			{
-				printf( "%02x ", Rbyte() );
+				unsigned char u = Rbyte();
+				printf( "%02x (%c)", u, u );
 			}
 			printf( "\n" );
 #endif
 			return;
 		}
+
+#ifdef DEBUG_DUMBCRAFT
+		lastcmd = cmd;
+#endif
 	}
 
 	if( chatlen )

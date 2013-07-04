@@ -30,7 +30,7 @@ void Sbyte( uint8_t b )
 {
 	if( is_in_outcirc )
 	{
-		printf( "Broadcast: %02x (%c)\n", b, b );
+//		printf( "Broadcast: %02x (%c)\n", b, b );
 		outcirc[outcirchead & (OUTCIRCBUFFSIZE-1)] = b;
 		outcirchead++;
 	} else {
@@ -57,7 +57,7 @@ uint8_t UnloadCircularBufferOnThisClient( uint16_t * whence )
 	i16 = GetRoomLeft();
 	while( w != outcirchead && i16 )
 	{
-		printf( "." );
+//		printf( "." );
 		PushByte( outcirc[(w++)&(OUTCIRCBUFFSIZE-1)] );
 		i16--;
 	}
@@ -123,7 +123,9 @@ uint16_t readbuffersize = 0;
 
 uint8_t Rbyte()
 {
-	return readbuffer[readbufferpos++];
+	uint8_t rb = readbuffer[readbufferpos++];
+//	printf( "[%02x] ", rb );
+	return rb;
 }
 
 uint8_t CanRead()

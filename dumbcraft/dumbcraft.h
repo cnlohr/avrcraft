@@ -5,8 +5,8 @@
 
 #define MAX_PLAYERS 3
 #define MAX_PLAYER_NAME 17
-#define PROTO_VERSION 49
-#define PROTO_VERSION_STR "49"
+#define PROTO_VERSION 61
+#define PROTO_VERSION_STR "61"
 
 #define PLAYER_EID_BASE 0x20
 

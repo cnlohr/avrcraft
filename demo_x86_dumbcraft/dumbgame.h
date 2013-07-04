@@ -96,7 +96,20 @@ static void DoCustomPreloadStep( uint8_t playerid )
 	p->stance = p->y + (1<<FIXEDPOINT);
 	p->z = (1<<FIXEDPOINT)/2;
 	p->need_to_send_lookupdate = 1;
+
+
+	Sbyte( 0xce );
+	Sstring( "resources", 9 );
+	Sstring( "Resources", strlen("Resources") );
+	Sbyte( 0 );
+
+	Sbyte( 0xd0 );
+	Sbyte( 0x01 );
+	Sstring( "resources", 9 );
+
 }
+
+
 
 static void PlayerTickUpdate( int playerid )
 {
@@ -134,7 +147,19 @@ static void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 	}
 	else if( z == 1 && x == 4 )
 	{
+		static int clicks;
+		StartupBroadcast();
 
+
+
+		Sbyte( 0xcf );
+		Sstring( "Clicks-ab", 9 );
+		Sbyte( 0x00 );
+		Sstring( "resources", 9 );
+		Sint( clicks++ );
+
+
+		DoneBroadcast();
 		latch_setting_value = !latch_setting_value;
 		didflip = 2;
 		
@@ -155,7 +180,7 @@ static void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 
 	if( didflip )
 	{
-		SwitchToBroadcast();
+		StartupBroadcast();
 		Sbyte( 0x3d ); //effect
 		Sint( didflip + 999 );
 		Sint( x );
@@ -163,6 +188,7 @@ static void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 		Sint( z );
 		Sint( 0 );	
 		Sbyte( 0 );	
+		DoneBroadcast();
 	}
 
 }

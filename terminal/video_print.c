@@ -75,16 +75,19 @@ void ProcessEsc2( char c )
 			{
 			case 1:
 				for( i = 0; i <= pfcol; i++ )
-					framebuffer[NTWIDTH*pfrow + i] = 0;
+					if( i < NTWIDTH )
+						framebuffer[NTWIDTH*pfrow + i] = 0;
 				break;
 			case 2:
 				for( i = 0; i < NTWIDTH; i++ )
-					framebuffer[NTWIDTH*pfrow + i] = 0;
+					if( i < NTWIDTH )
+						framebuffer[NTWIDTH*pfrow + i] = 0;
 				break;
 			default:
 			case 0:
 				for( i = pfcol; i < NTWIDTH; i++ )
-					framebuffer[NTWIDTH*pfrow + i] = 0;
+					if( i < NTWIDTH )
+						framebuffer[NTWIDTH*pfrow + i] = 0;
 				break;
 			}
 		case 'J':
@@ -92,16 +95,19 @@ void ProcessEsc2( char c )
 			{
 			case 1:
 				for( j = NTWIDTH*pfrow + pfcol; j < NTWIDTH*NTLINES; j++ )
-					framebuffer[j] = 0;
+					if( j < NTWIDTH )
+						framebuffer[j] = 0;
 				break;
 			case 2:
 				for( j = 0; j < NTWIDTH*NTLINES; j++ )
-					framebuffer[j] = 0;
+					if( j < NTWIDTH )
+						framebuffer[j] = 0;
 				break;
 			default:
 			case 0:
 				for( j = 0; j <= NTWIDTH*pfrow + pfcol; j++ )
-					framebuffer[j] = 0;
+					if( j < NTWIDTH )
+						framebuffer[j] = 0;
 				break;
 			}
 		default:
@@ -144,7 +150,8 @@ void sendchr( char c )
 
 	if( c == '\n' ) 
 	{
-		pfcol = NTWIDTH;
+		pfcol = 0;
+		pfrow++;
 	}
 	else if( c == 27 )
 	{
@@ -153,7 +160,8 @@ void sendchr( char c )
 	}
 	else 
 	{
-		framebuffer[NTWIDTH*pfrow + pfcol] = c | ((pfattrib==7)?0x80:0);
+		if( pfcol < NTWIDTH )
+			framebuffer[NTWIDTH*pfrow + pfcol] = c | ((pfattrib==7)?0x80:0);
 		pfcol++;
 	}
 
