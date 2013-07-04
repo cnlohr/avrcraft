@@ -5,8 +5,8 @@
 
 #define MAX_PLAYERS 3
 #define MAX_PLAYER_NAME 17
-#define PROTO_VERSION 61
-#define PROTO_VERSION_STR "61"
+#define PROTO_VERSION 73
+#define PROTO_VERSION_STR "73"
 
 #define PLAYER_EID_BASE 0x20
 
@@ -19,6 +19,9 @@
 #define FIXEDPOINT 5
 
 #define MAPSIZECHUNKS 1
+
+#define RUNSPEED 5
+#define WALKSPEED 3
 
 #include <stdint.h>
 
@@ -42,7 +45,7 @@ uint8_t UnloadCircularBufferOnThisClient( uint16_t * whence ); //Push to the cur
 uint16_t GetCurrentCircHead();
 void StartupBroadcast(); //Set up broadcast output.
 void DoneBroadcast(); //Done with broadcast mode.
-
+void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed );  //before shifting is done by FIXEDPOINT
 
 //Game section
 
@@ -60,6 +63,9 @@ struct Player
 	uint8_t did_move:1;
 	uint8_t did_pitchyaw:1;
 	uint8_t just_spawned:1;
+
+	uint8_t running:1;
+	uint8_t doneupdatespeed:1;
 
 	uint8_t onground:1;
 	uint8_t active:1;

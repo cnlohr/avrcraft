@@ -232,6 +232,14 @@ void SSpawnPlayer( uint8_t pid )
 	SbufferPGM( default_spawn_metadata, sizeof( default_spawn_metadata ) );
 }
 
+void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed )
+{
+	Sbyte(0x2c);
+	Sint( playerno );
+	Sint( 1 );
+	Sstring( "generic.movementSpeed", strlen( "generic.movementSpeed" ) );	
+	Sdouble( speed );
+}
 
 #include "dumbgame.h"
 
@@ -332,6 +340,7 @@ void UpdateServer()
 			Sbyte( GAMEMODE ); //creative
 			Sshort( 256 ); //world height
 			Sstring( "default", 8 );
+
 			p->need_to_spawn = 0;
 			p->next_chunk_to_load = 1;
 			p->has_logged_on = 1;
@@ -427,6 +436,12 @@ void UpdateServer()
 			Sint( p->keepalivevalue );
 
 			p->need_to_send_keepalive = 0;
+		}
+
+		if( p->has_logged_on && !p->doneupdatespeed )
+		{
+			UpdatePlayerSpeed( player, p->running?RUNSPEED:WALKSPEED );
+			p->doneupdatespeed = 1;
 		}
 
 now_sending_broadcast:
@@ -649,15 +664,36 @@ void GotData( uint8_t playerno )
 			break;
 		case 0x13: //what is this? Entity action?
 		{
-			Rint();
-			Rbyte();
+			uint16_t ent = Rint();
+			uint8_t act = Rbyte();
+			if( ent == playerno )
+			{
+				switch (act)
+				{
+				case 0x04: //Player is running
+				case 0x05:
+					p->running = (act==0x04);
+					p->doneupdatespeed = 0;
+					break;
+				}
+			}
+
+			Rint(); //???
 			break;
 		}
-
 		case 0xfe: //We probably should respond more intelligently, but for now.
 		{
 			Rbyte(); //magic?
 			p->need_to_send_playerlist = 1;
+			break;
+		}
+		case 0xfa: //plugins (we drop them)  (and follow through to 0x74)
+			Rstring( 0, 0 );
+		case 0x74: //No idea what this is...
+		{
+			uint16_t rs;
+			rs = Rshort();
+			while( rs-- ) Rbyte();
 			break;
 		}
 		case 0xcc: //language or something?
@@ -674,7 +710,8 @@ void GotData( uint8_t playerno )
 			while( CanRead() )
 			{
 				unsigned char u = Rbyte();
-				printf( "%02x (%c)", u, u );
+//				printf( "%02x (%c)", u, u );
+				printf( "%02x ", u );
 			}
 			printf( "\n" );
 #endif

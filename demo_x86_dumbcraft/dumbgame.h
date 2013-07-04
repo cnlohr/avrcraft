@@ -158,6 +158,12 @@ static void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 		Sstring( "resources", 9 );
 		Sint( clicks++ );
 
+		Sbyte( 0x04 );
+		Sint( 0 );
+		Sint( clicks<<10 );
+		Sint( 0 );
+		Sint( clicks<<10 );
+
 
 		DoneBroadcast();
 		latch_setting_value = !latch_setting_value;
