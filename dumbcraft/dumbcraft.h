@@ -87,5 +87,27 @@ struct Player
 	uint8_t playername[MAX_PLAYER_NAME]; //todo: store playername length
 } Players[MAX_PLAYERS];
 
+extern uint16_t dumbcraft_tick;
+
+//Tools for the user:
+void Rbuffer( uint8_t * buffer, uint8_t size );
+uint32_t Rint();
+uint16_t Rshort();
+void Rstring( char * data, int16_t maxlen );
+int16_t Rdouble();
+int16_t Rfloat();
+void Sint( uint32_t o );
+void Sshort( uint16_t o );
+void Sstring( const unsigned char * str, uint8_t len );
+void Sbuffer( const uint8_t * buf, uint8_t len );
+void SbufferWide( const uint8_t * buf, uint8_t len );
+void SbufferPGM( const uint8_t * buf, uint8_t len );
+void Sdouble( int16_t i );
+void Sfloat( int16_t i );
+void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
+void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta );
+void SSpawnPlayer( uint8_t pid );
+void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed );
+
 #endif
 

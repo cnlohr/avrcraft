@@ -154,6 +154,15 @@ void Sbuffer( const uint8_t * buf, uint8_t len )
 	}
 }
 
+void SbufferWide( const uint8_t * buf, uint8_t len )
+{
+	uint8_t i;
+	for( i = 0; i < len; i++ )
+	{	
+		Sshort( buf[i] );
+	}
+}
+
 //Send a buffer from program memory.
 void SbufferPGM( const uint8_t * buf, uint8_t len )
 {
@@ -731,16 +740,15 @@ void GotData( uint8_t playerno )
 
 		Sbyte( 0x03 );
 
-		Sshort( chatlen + pll + 3 );
-		Sshort( '<' ) ;
-		for( i8 = 0; i8 < pll; i8++ )
-			Sshort( p->playername[i8] ) ;
+		Sshort( chatlen + pll + 2 + 10 + 2 );
+
+		SbufferWide( "{\"text\":\"<", 10 );
+		SbufferWide( p->playername, pll );
 		Sshort( '>' ) ;
 		Sshort( ' ' ) ;
-
-		for( i8 = 0; i8 < chatlen; i8++ )
-			Sshort( chat[i8] ) ;
-
+		SbufferWide( chat, chatlen );
+		Sshort( '"' );
+		Sshort( '}' );
 		DoneBroadcast();
 	}
 }
