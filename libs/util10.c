@@ -10,7 +10,7 @@ void Uint32To10Str( char * sto, uint32_t indata )
 
 	while( place )
 	{
-		while( indata > place )
+		while( indata >= place )
 		{
 			ct++;
 			indata -= place;

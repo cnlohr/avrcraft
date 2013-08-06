@@ -3,12 +3,12 @@
 #ifndef _DUMBCRAFT_H
 #define _DUMBCRAFT_H
 
-#define MAX_PLAYERS 3
-#define MAX_PLAYER_NAME 17
-#define PROTO_VERSION 73
-#define PROTO_VERSION_STR "73"
+#define PROTO_VERSION 74
+#define PROTO_VERSION_STR "74"
 
 #define PLAYER_EID_BASE 0x20
+
+#include "dumbconfig.h"
 
 //Overworld
 #define WORLDTYPE 0

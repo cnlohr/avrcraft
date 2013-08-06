@@ -248,7 +248,67 @@ void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed )
 	Sint( 1 );
 	Sstring( "generic.movementSpeed", strlen( "generic.movementSpeed" ) );	
 	Sdouble( speed );
+	Sshort(0);
 }
+
+
+#ifdef INCLUDE_BROADCAST_UTILS
+#ifndef INCLUDE_UDP
+#error ERROR! You must include UDP if you want to have broadcast.
+#endif
+#include "iparpetc.h"
+void SendBroadcast( )
+{
+	const char * sending;
+//	char stt[12];
+puts( "Tick" );
+
+/*
+	macfrom[0] = 0x01;
+	macfrom[1] = 0x00;
+	macfrom[2] = 0x5e;
+	macfrom[3] = 0x00;
+	macfrom[4] = 0x02;
+	macfrom[5] = 0x3c;
+*/
+//	SwitchToBroadcast();
+
+	macfrom[0] = 0xff;
+	macfrom[1] = 0xff;
+	macfrom[2] = 0xff;
+	macfrom[3] = 0xff;
+	macfrom[4] = 0xff;
+	macfrom[5] = 0xff;
+
+
+	enc424j600_stopop();
+	enc424j600_startsend( 0 );
+	send_etherlink_header( 0x0800 );
+//	send_ip_header( 0, "\xE0\x00\x02\x3c", 17 ); //UDP Packet to 224.0.2.60
+	send_ip_header( 0, "\xff\xff\xff\xff", 17 ); //UDP Packet to 255.255.255.255
+
+	Sshort( MINECRAFT_PORT+1 );
+	Sshort( 4445 );
+	Sshort( 0 ); //length for later
+	Sshort( 0 ); //csum for later
+
+	Sbuffer( "[MOTD]", 6 );
+	for( sending = SERVER_NAME; *sending; sending++ ) 
+		Sbyte( *sending );
+//	Sbuffer( SERVER_NAME, strlen( SERVER_NAME ) );
+	Sbuffer( "[/MOTD][AD]", 11 );
+	
+	for( sending = MINECRAFT_PORT_STRING; *sending; sending++ ) 
+		Sbyte( *sending );
+
+//	Uint32To10Str( stt, #MINECRAFT_PORT );
+//	Sbuffer( stt, strlen( stt ) );
+//	Sbuffer( "192.168.0.143:33195", strlen( "192.168.0.143:33195" ) );
+	Sbuffer( "[/AD]", 5 );
+
+	util_finish_udp_packet();
+}
+#endif
 
 #include "dumbgame.h"
 
@@ -402,7 +462,6 @@ void UpdateServer()
 		//This is triggered when players want to actually join.
 		if( p->need_to_login )
 		{
-
 			p->need_to_login = 0;
 			Sbyte( 0x01 ); //Login request
 			Sint( player );
@@ -473,6 +532,14 @@ void TickServer()
 
 #ifdef DEBUG_DUMBCRAFT
 //	printf( "Tick.\n" );
+#endif
+
+#ifdef INCLUDE_BROADCAST_UTILS
+	printf( "%04x\n", dumbcraft_tick );
+	if( ( dumbcraft_tick & 0xf ) == 0 )
+	{
+		SendBroadcast( );
+	}
 #endif
 
 	//Everything in here should be broadcast to all players.
@@ -598,6 +665,7 @@ void GotData( uint8_t playerno )
 			break;
 		case 0x02:  //Player kind of wants to check out the server.
 			//Check protocol version
+
 			if( Rbyte() != PROTO_VERSION )
 			{
 				ForcePlayerClose( playerno, 'v' );

@@ -55,6 +55,7 @@ int8_t lastconnection = -1; //for dumbcraft
 uint16_t bytespushed; //for dumbcraft
 
 #ifdef NO_HTTP
+#undef HTTP_CONNECTIONS
 #define HTTP_CONNECTIONS 0
 #endif
 
@@ -77,7 +78,7 @@ int8_t MyGetFreeConnection( uint8_t minc, uint8_t max_not_inclusive )
 
 uint8_t TCPReceiveSyn( uint16_t portno )
 {
-	if( portno == 25565 )  //Must bump these up by 8... 
+	if( portno == MINECRAFT_PORT )  //Must bump these up by 8... 
 	{
 		uint8_t ret = MyGetFreeConnection(HTTP_CONNECTIONS+1, TCP_SOCKETS );
 		sendstr( "Conn attempt: " );
@@ -112,6 +113,18 @@ void TCPConnectionClosing( uint8_t conn )
 	}
 #endif
 }
+/////////////////////////////////////////UDP AREA//////////////////////////////////////////////
+
+void HandleUDP( uint16_t len )
+{
+	POP16; //Checksum
+	len -= 8; //remove header.
+
+	//You could pop things, or check ports, etc. here.
+
+	return;
+}
+
 
 ///////////////////////////////////////DUMBCRAFT AREA//////////////////////////////////////////
 

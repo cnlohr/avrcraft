@@ -57,7 +57,7 @@
 //you will have access to the global variables:
 //  localport, remoteport, and ipsource
 //
-//#define INCLUDE_UDP
+#define INCLUDE_UDP
 
 //TCP is still in alpha.  It is still a little buggy.  It takes up ~2200 bytes
 //You must call:

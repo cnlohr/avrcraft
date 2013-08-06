@@ -16,7 +16,7 @@ SRCS = test.c  \
 PROCESSOR=atmega328
 PROGRAMCODE=m328
 COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft
-CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=28636363UL -DMUTE_PRINTF #-DNO_HTTP #-Wall  
+CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=28636363UL -DNO_HTTP #-DMUTE_PRINTF #-DNO_HTTP #-Wall  
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c
 EXTRA_LD_FLAGS=-Wl,--relax -Wa,-a,-ad -mcall-prologues 
