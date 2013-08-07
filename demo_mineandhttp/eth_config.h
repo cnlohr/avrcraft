@@ -51,6 +51,11 @@
 //Do this to disable printf's and save space
 //#define MUTE_PRINTF
 
+
+//DHCP will allow your device to automatically acquire an IP address. 
+#define ENABLE_DHCP_CLIENT
+
+
 //UDP is pretty well tested.  It takes up ~350 bytes
 //If you use UDP, you will need to implement the following function:
 //  void HandleUDP( uint16_t len ) { ... }
@@ -86,10 +91,11 @@
 
 
 //Additional applications
+#ifndef NO_HTTP
 #define INCLUDE_HTTP_SERVER
 #define HTTP_SERVER_TIMEOUT (10000) 
 #define HTTP_CONNECTIONS 6
-
+#endif
 
 //Scratchpad for sending out packets like UDP, ICMP, ARP, etc.
 #define TX_SCRATCHPAD_END  1024

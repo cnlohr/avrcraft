@@ -2,6 +2,7 @@ all : program.hex burn program.lst
 CC = avr-gcc
 
 SRCS = test.c  \
+       dumbgame.c \
 	../libs/avr_print.c \
 	../ipcore/enc424j600.c \
 	../ipcore/iparpetc.c \
@@ -15,15 +16,18 @@ SRCS = test.c  \
 
 PROCESSOR=atmega328
 PROGRAMCODE=m328
+#CPUFREQ=28636363UL
+CPUFREQ=20000000UL
 COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft
-CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=28636363UL -DNO_HTTP #-DMUTE_PRINTF #-DNO_HTTP #-Wall  
+CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=$(CPUFREQ) -DNO_HTTP #-DMUTE_PRINTF #-DNO_HTTP #-Wall  
+CFLAGS:=$(CFLAGS) --combine -fwhole-program 
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c
 EXTRA_LD_FLAGS=-Wl,--relax -Wa,-a,-ad -mcall-prologues 
 
 
 program.elf : $(SRCS)
-	avr-gcc --combine -fwhole-program -I -mmcu=$(PROCESSOR) $(CFLAGS) -o $@ $^ -L /usr/lib64/binutils/avr/2.19.1 $(EXTRA_LD_FLAGS) > program.lst
+	avr-gcc -I -mmcu=$(PROCESSOR) $(CFLAGS) -o $@ $^ -L /usr/lib64/binutils/avr/2.19.1 $(EXTRA_LD_FLAGS) > program.lst
 	avr-size -A $@
 	@echo "Total = .data + .text"
 	avr-objdump program.elf -t > program.map

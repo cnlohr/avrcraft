@@ -138,7 +138,7 @@ uint32_t FindClusterFileInDir( const char * fname, uint32_t cluster, int16_t fil
 	entry = 0;
 
 	if( fileid >= 0 )
-		longfname = fname;
+		longfname = (char*)fname;  //Don't worry, if this is the case, we won't be writing.
 	else
 		longfname = alloca( MAX_LONG_FILENAME );
 

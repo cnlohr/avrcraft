@@ -5,23 +5,15 @@
 
 #define PROTO_VERSION 74
 #define PROTO_VERSION_STR "74"
+#define LONG_PROTO_VERSION "1.6.2"
 
 #define PLAYER_EID_BASE 0x20
 
 #include "dumbconfig.h"
 
-//Overworld
-#define WORLDTYPE 0
-#define GAMEMODE  0
-
 //For floating-point values when converting to int16's
 //Smaller numbers yeild less accuracy, but bigger maximums
 #define FIXEDPOINT 5
-
-#define MAPSIZECHUNKS 1
-
-#define RUNSPEED 5
-#define WALKSPEED 3
 
 #include <stdint.h>
 
@@ -88,6 +80,7 @@ struct Player
 } Players[MAX_PLAYERS];
 
 extern uint16_t dumbcraft_tick;
+extern uint8_t dumbcraft_playercount;
 
 //Tools for the user:
 void Rbuffer( uint8_t * buffer, uint8_t size );
@@ -108,6 +101,16 @@ void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
 void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta );
 void SSpawnPlayer( uint8_t pid );
 void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed );
+
+//You must write the following:
+uint8_t ClientHandleChat( char * chat, uint8_t chatlen ); 
+void PlayerUpdate( uint8_t playerid );
+void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z );
+void PlayerTickUpdate( int playerid );
+void DoCustomPreloadStep( uint8_t playerid );
+void InitDumbgame();
+
+
 
 #endif
 

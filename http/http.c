@@ -10,7 +10,10 @@
 //Extra ~120 bytes of code, but ~30% overall performance boost!
 #define FAST_SECTOR_TRANSFER
 
+#define PSTRx PSTR
+#define PushPGMStr enc424j600_pushpgmstr
 #define POP enc424j600_pop8()
+
 static void InternalStartHTTP( );
 struct HTTPConnection * curhttp;
 
@@ -131,21 +134,6 @@ void HTTPTick()
 	}
 
 }
-
-
-void PushPGMStr( const char * msg )
-{
-	uint8_t r;
-
-	do
-	{
-		r = pgm_read_byte(msg++);
-		if( !r ) break;
-		enc424j600_push8( r );
-	} while( 1 );
-}
-
-#define PSTRx PSTR
 
 void HTTPHandleInternalCallback( )
 {

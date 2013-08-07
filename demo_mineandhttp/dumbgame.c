@@ -42,13 +42,15 @@
 //  static void PlayerUpdate( uint8_t playerid );
 //  static void DoCustomPreloadStep( uint8_t playerid );
 //  static void InitDumbgame();
+//  int ClientHandleChat( chat, chatlen ); //return 1 if you want the chat to propogate.
 
 /* General notes for writing the game portion:
     1) You have a limited send-size, it's around 512 bytes.  Split up your commands among multiple packets.
 	2) Do not send when receiving.  Add extra flags to the player structure to send when it's time to send.
 */
 
-
+#include "dumbcraft.h"
+#include <string.h>
 
 uint8_t regaddr_set;
 uint8_t regval_set;
@@ -59,12 +61,12 @@ volatile uint8_t regval_get;
 uint8_t hasset_value;
 uint8_t latch_setting_value;
 
-static void InitDumbgame()
+void InitDumbgame()
 {
 	//no code.
 }
 
-static void DoCustomPreloadStep( uint8_t playerid )
+void DoCustomPreloadStep( uint8_t playerid )
 {
 	struct Player * p = &Players[playerid];
 
@@ -98,7 +100,7 @@ static void DoCustomPreloadStep( uint8_t playerid )
 	p->need_to_send_lookupdate = 1;
 }
 
-static void PlayerTickUpdate( int playerid )
+void PlayerTickUpdate( int playerid )
 {
 	//printf( "%f %f %f\n", SetDouble(p->x), SetDouble(p->y), SetDouble(p->z) );
 	struct Player * p = &Players[playerid];
@@ -117,7 +119,7 @@ static void PlayerTickUpdate( int playerid )
 	}
 }
 
-static void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
+void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 {
 	struct Player * p = &Players[playerid];
 
@@ -168,7 +170,7 @@ static void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 
 }
 
-static void PlayerUpdate( uint8_t playerid )
+void PlayerUpdate( uint8_t playerid )
 {
 	uint8_t i;
 	struct Player * p = &Players[playerid];
@@ -236,5 +238,23 @@ static void PlayerUpdate( uint8_t playerid )
 		break;
 	}
 }
+
+
+void SetServerName( const char * stname );
+
+uint8_t ClientHandleChat( char * chat, uint8_t chatlen )
+{
+	if( chat[0] == '/' )
+	{
+		if( strncmp( &chat[1], "title", 5 ) == 0 && chatlen > 8 )
+		{
+			chat[chatlen] = 0;
+			SetServerName( &chat[7] );
+			return 0;
+		}
+	}
+	return chatlen;
+}
+
 
 #endif

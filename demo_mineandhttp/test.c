@@ -14,6 +14,7 @@
 #include <http.h>
 #include <string.h>
 #include <basicfat.h>
+#include <avr/eeprom.h> 
 
 /*
 Useful ports:
@@ -53,6 +54,14 @@ unsigned char cc;
 
 int8_t lastconnection = -1; //for dumbcraft
 uint16_t bytespushed; //for dumbcraft
+uint8_t  EEMEM my_server_name_eeprom[16]; 
+char my_server_name[16];
+
+void SetServerName( const char * stname )
+{
+	memcpy( my_server_name, stname, strlen( stname ) + 1 );
+	eeprom_write_block( stname, my_server_name_eeprom, strlen( stname ) + 1 );
+}
 
 #ifdef NO_HTTP
 #undef HTTP_CONNECTIONS
@@ -324,7 +333,7 @@ void HTTPCustomCallback( )
 
 unsigned char MyIP[4] = { 192, 168, 0, 142 };
 unsigned char MyMask[4] = { 255, 255, 255, 0 };
-
+unsigned char MyGateway[4] = { 192, 168, 0, 1 };
 unsigned char MyMAC[6];
 
 
@@ -339,6 +348,10 @@ int main( void )
 	setup_spi();
 	sendstr( "HELLO\n" );
 	setup_clock();
+
+	eeprom_read_block( &my_server_name[0], &my_server_name_eeprom[0], 16 );
+	if( my_server_name[0] == 0 || my_server_name[0] == (char)0xff )
+		SetServerName( "AVRCraft" );
 
 	//Configure T2 to "overflow" at 100 Hz, this lets us run the TCP clock
 	TCCR2A = _BV(WGM21) | _BV(WGM20);
@@ -375,6 +388,8 @@ int main( void )
 	}
 	sendstr( "OK.\n" );
 
+	SetupDHCPName( my_server_name );
+
 	InitDumbcraft();
 
 	while(1)
@@ -400,6 +415,7 @@ int main( void )
 			delayctr++;
 			if( delayctr==10 )
 			{
+				TickDHCP();
 				delayctr = 0;
 				TickServer();
 			}

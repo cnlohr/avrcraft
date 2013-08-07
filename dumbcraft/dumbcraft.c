@@ -48,6 +48,8 @@ const uint8_t mapdata[] PROGMEM = {
 
 const uint8_t default_spawn_metadata[] PROGMEM = { 0x00, 0x00, 0x48, 0x00, 0x00, 0x00, 0x00, 0x7F };
 
+uint8_t dumbcraft_playercount;
+
 //////////////////////////////////////////READING UTILITIES////////////////////
 
 //Read in a buffer from the current connection of specified size.
@@ -252,17 +254,14 @@ void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed )
 }
 
 
-#ifdef INCLUDE_BROADCAST_UTILS
+#ifdef INCLUDE_ANNOUNCE_UTILS
 #ifndef INCLUDE_UDP
 #error ERROR! You must include UDP if you want to have broadcast.
 #endif
 #include "iparpetc.h"
-void SendBroadcast( )
+void SendAnnounce( )
 {
 	const char * sending;
-//	char stt[12];
-puts( "Tick" );
-
 /*
 	macfrom[0] = 0x01;
 	macfrom[1] = 0x00;
@@ -271,15 +270,7 @@ puts( "Tick" );
 	macfrom[4] = 0x02;
 	macfrom[5] = 0x3c;
 */
-//	SwitchToBroadcast();
-
-	macfrom[0] = 0xff;
-	macfrom[1] = 0xff;
-	macfrom[2] = 0xff;
-	macfrom[3] = 0xff;
-	macfrom[4] = 0xff;
-	macfrom[5] = 0xff;
-
+	SwitchToBroadcast();
 
 	enc424j600_stopop();
 	enc424j600_startsend( 0 );
@@ -287,30 +278,22 @@ puts( "Tick" );
 //	send_ip_header( 0, "\xE0\x00\x02\x3c", 17 ); //UDP Packet to 224.0.2.60
 	send_ip_header( 0, "\xff\xff\xff\xff", 17 ); //UDP Packet to 255.255.255.255
 
-	Sshort( MINECRAFT_PORT+1 );
-	Sshort( 4445 );
-	Sshort( 0 ); //length for later
-	Sshort( 0 ); //csum for later
+	enc424j600_push16( MINECRAFT_PORT+1 );
+	enc424j600_push16( 4445 );
+	enc424j600_push16( 0 ); //length for later
+	enc424j600_push16( 0 ); //csum for later
 
-	Sbuffer( "[MOTD]", 6 );
-	for( sending = SERVER_NAME; *sending; sending++ ) 
-		Sbyte( *sending );
-//	Sbuffer( SERVER_NAME, strlen( SERVER_NAME ) );
-	Sbuffer( "[/MOTD][AD]", 11 );
-	
-	for( sending = MINECRAFT_PORT_STRING; *sending; sending++ ) 
-		Sbyte( *sending );
-
-//	Uint32To10Str( stt, #MINECRAFT_PORT );
-//	Sbuffer( stt, strlen( stt ) );
-//	Sbuffer( "192.168.0.143:33195", strlen( "192.168.0.143:33195" ) );
-	Sbuffer( "[/AD]", 5 );
+#ifdef STATIC_MOTD_NAME
+	enc424j600_pushpgmstr( PSTR( "[MOTD]"MOTD_NAME"[/MOTD][AD]"MINECRAFT_PORT_STRING"[/AD]" ) );
+#else
+	enc424j600_pushpgmstr( PSTR( "[MOTD]" ) );
+	enc424j600_pushstr( MOTD_NAME );
+	enc424j600_pushpgmstr( PSTR( "[/MOTD][AD]"MINECRAFT_PORT_STRING"[/AD]" ) );
+#endif
 
 	util_finish_udp_packet();
 }
 #endif
-
-#include "dumbgame.h"
 
 void InitDumbcraft()
 {
@@ -325,9 +308,12 @@ void UpdateServer()
 {
 	uint8_t player, i;
 	uint16_t i16;
+	uint8_t localplayercount;
 	for( player = 0; player < MAX_PLAYERS; player++ )
 	{
 		struct Player * p = &Players[player];
+
+		if( p->active ) localplayercount++;
 
 		if( !p->active || !CanSend( player ) ) continue;
 
@@ -477,21 +463,38 @@ void UpdateServer()
 		}
 		if( p->need_to_send_playerlist )
 		{
+
+#ifdef STATIC_SERVER_STAT_STRING
+#ifndef STATIC_MOTD_NAME
+#error Cannot make a dumb server response string if you have a dynamic server name.
+#endif
+#define VERSION_AND_STRING_AND_ALL  "\xa7\x31\x00"PROTO_VERSION_STR"\x00"LONG_PROTO_VERSION"\x00"MOTD_NAME"\x000\x00"MAX_PLAYERS_STRING
+			uint8_t stt[sizeof( VERSION_AND_STRING_AND_ALL )];
+			memcpy_P( stt, PSTR( VERSION_AND_STRING_AND_ALL ), sizeof( VERSION_AND_STRING_AND_ALL ) );
+			Sbyte( 0xff );
+			Sstring( stt, sizeof( VERSION_AND_STRING_AND_ALL ) );
+
+#else
 			uint16_t optr = 0;
 			uint8_t stt[40];
 
-			//XXX TODO: Rewrite this part! It's kind of nasty and we could make better use of program space.
-			//It chews up extra stack, program AND .data space.
+#define VERSION_AND_STRING  "\xa7\x31\x00"PROTO_VERSION_STR"\x00"LONG_PROTO_VERSION
+			memcpy_P( stt, PSTR( VERSION_AND_STRING ), sizeof( VERSION_AND_STRING ) );
+			optr = sizeof( VERSION_AND_STRING );
 
-			StrTack( stt, &optr, "\xa7\x31" );	stt[optr++] = 0;
-			StrTack( stt, &optr, PROTO_VERSION_STR ); 	stt[optr++] = 0;
-			StrTack( stt, &optr, "\x32\x2e\x34\xe2\x32" ); 	stt[optr++] = 0;
-			StrTack( stt, &optr, "dumbcraft" ); 	stt[optr++] = 0;
-			StrTack( stt, &optr, "0" ); 	stt[optr++] = 0;   //XXX FIXME
-			StrTack( stt, &optr, "20" );                       //XXX FIXME
+#ifdef STATIC_MOTD_NAME
+
+			PgmStrTack( stt, &optr, PSTR( MOTD_NAME ) ); 	stt[optr++] = 0;
+#else
+			StrTack( stt, &optr, MOTD_NAME ); 	stt[optr++] = 0;
+#endif
+			Uint8To10Str( stt + optr, dumbcraft_playercount );
+			optr += 4;
+			PgmStrTack( stt, &optr, PSTR( MAX_PLAYERS_STRING ) );
+
 			Sbyte( 0xff );
-
 			Sstring( stt, optr );
+#endif
 
 			p->need_to_send_playerlist = 0;
 		}
@@ -521,6 +524,7 @@ now_sending_broadcast:
 
 		EndSend();
 	}
+	dumbcraft_playercount = localplayercount;
 }
 
 
@@ -531,14 +535,13 @@ void TickServer()
 	dumbcraft_tick++;
 
 #ifdef DEBUG_DUMBCRAFT
-//	printf( "Tick.\n" );
+	puts( "Tick." );
 #endif
 
-#ifdef INCLUDE_BROADCAST_UTILS
-	printf( "%04x\n", dumbcraft_tick );
+#ifdef INCLUDE_ANNOUNCE_UTILS
 	if( ( dumbcraft_tick & 0xf ) == 0 )
 	{
-		SendBroadcast( );
+		SendAnnounce( );
 	}
 #endif
 
@@ -804,20 +807,24 @@ void GotData( uint8_t playerno )
 	{
 		uint8_t pll = strlen( p->playername );
 
-		StartupBroadcast();
+		if( ClientHandleChat( chat, chatlen ) )
+		{
 
-		Sbyte( 0x03 );
+			StartupBroadcast();
 
-		Sshort( chatlen + pll + 2 + 10 + 2 );
+			Sbyte( 0x03 );
 
-		SbufferWide( "{\"text\":\"<", 10 );
-		SbufferWide( p->playername, pll );
-		Sshort( '>' ) ;
-		Sshort( ' ' ) ;
-		SbufferWide( chat, chatlen );
-		Sshort( '"' );
-		Sshort( '}' );
-		DoneBroadcast();
+			Sshort( chatlen + pll + 2 + 10 + 2 );
+
+			SbufferWide( "{\"text\":\"<", 10 );
+			SbufferWide( p->playername, pll );
+			Sshort( '>' ) ;
+			Sshort( ' ' ) ;
+			SbufferWide( chat, chatlen );
+			Sshort( '"' );
+			Sshort( '}' );
+			DoneBroadcast();
+		}
 	}
 }
 

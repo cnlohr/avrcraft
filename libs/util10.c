@@ -57,3 +57,22 @@ void StrTack( char * str, uint16_t * optr, const char * strin )
 	*optr += sl;
 }
 
+#ifdef __AVR__
+#include <avr/pgmspace.h>
+
+void PgmStrTack( char * str, uint16_t * optr, const char * strin )
+{
+	uint8_t r;
+	do
+	{
+		r = pgm_read_byte(strin++);
+		if( !r ) break;
+		str[((*optr)++)] = r;
+	} while( 1 );
+}
+#else
+void PgmStrTack( char * str, uint16_t * optr, const char * strin )
+{
+	StrTack( str, optr, strin );
+}
+#endif

@@ -17,7 +17,7 @@ void enc28j60_receivecallback( uint16_t packetlen );
 extern unsigned char MyIP[];
 extern unsigned char MyMask[];
 extern unsigned char MyMAC[];
-
+extern unsigned char MyGateway[];
 
 extern unsigned char macfrom[6];
 extern unsigned char ipsource[4];
@@ -25,9 +25,9 @@ extern unsigned short remoteport;
 extern unsigned short localport;
 
 //Utility out
+void SwitchToBroadcast();
 void send_etherlink_header( unsigned short type );
 void send_ip_header( unsigned short totallen, const unsigned char * to, unsigned char proto );
-
 void util_finish_udp_packet();
 
 #define ipsource_uint ((uint32_t*)&ipsource)
@@ -76,6 +76,19 @@ extern struct PINGEntries ClientPingEntries[PING_RESPONSES_SIZE];
 int8_t GetPingslot( uint8_t * ip );
 void DoPing( uint8_t pingslot );
 
+
+#endif
+
+#ifdef ENABLE_DHCP_CLIENT
+
+//NOTE: This cannot exceed 255
+#ifndef DHCP_TICKS_PER_SECOND
+#define DHCP_TICKS_PER_SECOND 10
+#endif
+
+extern uint8_t did_get_dhcp;
+void SetupDHCPName( const char * name  );
+void TickDHCP(); //Call this DHCP_TICKS_PER_SECOND times per second.
 
 #endif
 

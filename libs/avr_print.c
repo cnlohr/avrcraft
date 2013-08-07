@@ -6,6 +6,7 @@
 #include <avr/sleep.h>
 #include <util/delay.h>
 #include <stdio.h>
+#include "avr_print.h"
 
 #ifndef MUTE_PRINTF
 

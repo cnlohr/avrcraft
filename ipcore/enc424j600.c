@@ -53,6 +53,23 @@ void enc424j600_popblob( uint8_t * data, uint8_t len )
 	}
 }
 
+void enc424j600_pushpgmstr( const char * msg )
+{
+	uint8_t r;
+	do
+	{
+		r = pgm_read_byte(msg++);
+		if( !r ) break;
+		enc424j600_push8( r );
+	} while( 1 );
+}
+
+void enc424j600_pushstr( const char * msg )
+{
+	for( ; *msg; msg++ ) 
+		enc424j600_push8( *msg );
+}
+
 void enc424j600_pushblob( const uint8_t * data, uint8_t len )
 {
 	while( len-- )
