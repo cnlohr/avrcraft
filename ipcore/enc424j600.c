@@ -30,6 +30,7 @@ void enc424j600_push16( uint16_t v)
 	espiW( v & 0xFF );
 }
 
+
 //little endian
 uint16_t enc424j600_pop16LE()
 {
@@ -63,6 +64,15 @@ void enc424j600_pushpgmstr( const char * msg )
 		enc424j600_push8( r );
 	} while( 1 );
 }
+
+void enc424j600_pushpgmblob( const uint8_t * data, uint8_t len )
+{
+	while( len-- )
+	{
+		enc424j600_push8( pgm_read_byte(data++) );
+	}
+}
+
 
 void enc424j600_pushstr( const char * msg )
 {

@@ -331,11 +331,23 @@ void HTTPCustomCallback( )
 
 #endif
 
+
+
 unsigned char MyIP[4] = { 192, 168, 0, 142 };
 unsigned char MyMask[4] = { 255, 255, 255, 0 };
 unsigned char MyGateway[4] = { 192, 168, 0, 1 };
 unsigned char MyMAC[6];
 
+
+void GotDHCPLease()
+{
+/*
+	puts( "New Lease." );
+	printf( "IP: %d.%d.%d.%d\n", MyIP[0], MyIP[1], MyIP[2], MyIP[3] );
+	printf( "MS: %d.%d.%d.%d\n", MyMask[0], MyMask[1], MyMask[2], MyMask[3] );
+	printf( "GW: %d.%d.%d.%d\n", MyGateway[0], MyGateway[1], MyGateway[2], MyGateway[3] );
+*/
+}
 
 int main( void )
 {

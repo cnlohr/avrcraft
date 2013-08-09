@@ -90,6 +90,12 @@ extern uint8_t did_get_dhcp;
 void SetupDHCPName( const char * name  );
 void TickDHCP(); //Call this DHCP_TICKS_PER_SECOND times per second.
 
+//If DHCP is enabled, you must write this function:
+void GotDHCPLease();
+
+#else
+void SetupDHCPName( const char * name  ) { }
+void TickDHCP() { }
 #endif
 
 
