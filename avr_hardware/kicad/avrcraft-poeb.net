@@ -1,4 +1,4 @@
-# EESchema Netlist Version 1.1 created  Fri 09 Aug 2013 04:15:56 PM EDT
+# EESchema Netlist Version 1.1 created  Mon 12 Aug 2013 06:34:53 PM EDT
 (
  ( /52054CC3 RIBBON6SMT  J2 AVRISP6 {Lib=AVRISP6}
   (    1 N-000026 )
@@ -57,7 +57,7 @@
   (    G N-000021 )
   (    S /POE+C )
  )
- ( /5102E84D .1SMTPIN  P8 CONN_1 {Lib=CONN_1}
+ ( /5102E84D .1SMTPIN  P8 PB0 {Lib=CONN_1}
   (    1 N-000004 )
  )
  ( /5102E754 XTAL4P  X2 25MHz {Lib=XTAL4P}
@@ -66,10 +66,10 @@
   (    3 GND )
   (    4 GND )
  )
- ( /5102E4B1 .1SMTPIN  P6 CONN_1 {Lib=CONN_1}
+ ( /5102E4B1 .1SMTPIN  P6 5V {Lib=CONN_1}
   (    1 +5V )
  )
- ( /5102E499 .1SMTPIN  P7 CONN_1 {Lib=CONN_1}
+ ( /5102E499 .1SMTPIN  P7 3V3 {Lib=CONN_1}
   (    1 +3.3V )
  )
  ( /5102E46E XTAL4P  X1 XTAL4P {Lib=XTAL4P}
@@ -78,10 +78,10 @@
   (    3 GND )
   (    4 GND )
  )
- ( /5102E26F .1SMTPIN  P5 CONN_1 {Lib=CONN_1}
+ ( /5102E26F .1SMTPIN  P5 PD34 {Lib=CONN_1}
   (    1 N-000008 )
  )
- ( /5102E167 .1SMTPIN  P4 CONN_1 {Lib=CONN_1}
+ ( /5102E167 .1SMTPIN  P4 GNd {Lib=CONN_1}
   (    1 GND )
  )
  ( /5101B31A SM0805  C13 0.01u {Lib=C}
@@ -108,7 +108,7 @@
   (    1 +5V )
   (    2 /HighCOut )
  )
- ( /5101B283 SM1005  D5 DIODESCH {Lib=DIODESCH}
+ ( /5101B283 DO214  D5 DIODESCH {Lib=DIODESCH}
   (    1 GND )
   (    2 /HighCOut )
  )
@@ -123,7 +123,7 @@
   (    8 /POE+A )
   (    9 GND )
  )
- ( /5101558F SM0805  C12 .22u {Lib=C}
+ ( /5101558F SM0603  C12 .22u {Lib=C}
   (    1 GND )
   (    2 /POE+A )
  )

@@ -1,10 +1,10 @@
-update=Fri 09 Aug 2013 04:16:54 PM EDT
+update=Wed 03 Jul 2013 02:59:35 PM EDT
 last_client=pcbnew
 [pcbnew]
 version=1
-PadDrlX=0
-PadDimH=1340
-PadDimV=2130
+PadDrlX=320
+PadDimH=600
+PadDimV=600
 BoardThickness=630
 TxtPcbV=800
 TxtPcbH=600
@@ -16,7 +16,7 @@ DrawLar=150
 EdgeLar=150
 TxtLar=120
 MSegLar=150
-LastNetListRead=avrcraft-poeb.net
+LastNetListRead=avrcraft-poe.net
 [pcbnew/libraries]
 LibDir=../../../../electrical/kicad
 LibName1=sockets
@@ -47,7 +47,6 @@ LibName25=SMT_ETHERNET
 LibName26=SO8E-WITHPAD
 LibName27=SO14-ATTINY
 LibName28=SO16MULTI
-LibName29=SOT-26
-LibName30=U5
-LibName31=USB-MiniB
-LibName32=XTAL4P
+LibName29=U5
+LibName30=USB-MiniB
+LibName31=XTAL4P
