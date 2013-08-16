@@ -2,7 +2,7 @@ all : dumbcraft
 
 CFLAGS:=-I. -I../dumbcraft -I../libs -DDEBUG_DUMBCRAFT
 
-dumbcraft : main.o ../dumbcraft/dumbcraft.o ../libs/util10.o ../libs/os_generic.o
+dumbcraft : main.o ../dumbcraft/dumbcraft.o ../libs/util10.o ../libs/os_generic.o dumbgame.o
 	gcc -o $@ $^ -lpthread
 
 clean :

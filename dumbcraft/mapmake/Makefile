@@ -1,4 +1,4 @@
-all : mapmake makecv  makecomp map.h
+all : mapmake makecv  makecomp map.h map.uncompress map.gz
 #7.h 0.h
 
 makecomp : makecomp.o
@@ -20,5 +20,5 @@ makecv : makecv.o
 	./mapmake $@ > $@
 
 clean :
-	rm -rf mapmake makecv *.h *.gz *.uncompress *.o *~
+	rm -rf mapmake makecv  *.o *~ *.h *.gz *.uncompress
 

@@ -259,7 +259,7 @@ void RequestNewIP( uint8_t mode, uint8_t * negotiating_ip, uint8_t * dhcp_server
 
 	enc424j600_push16( 0x3702 ); //Parameter request list
 	enc424j600_push16( 0x0103 ); //subnet mask, router
-//	enc424j600_push16( 0x2a06 ); //NTP server, DNS server  (We don't use either NTP or DNS)
+	enc424j600_push16( 0x2a06 ); //NTP server, DNS server  (We don't use either NTP or DNS)
 	enc424j600_push8( 0xff ); //End option
 
 	enc424j600_pushzeroes( 32 ); //Padding
