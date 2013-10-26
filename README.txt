@@ -163,6 +163,8 @@ Yes, it's a single layer.  No, there are no jumpers.
 Special thanks to the folks at #mcdevs.  They made this awesome thing here:
 http://www.wiki.vg/Protocol
 
+Thanks to nickelpro at #mcdevs for helping me with 1.7 support.
+
 I used a few guides when working on the SD card code.
 http://www.esawdust.com/blog/serial/files/SPI_SD_MMC_ATMega128_AVR.html
 http://elm-chan.org/docs/mmc/mmc_e.html 

@@ -68,6 +68,8 @@ void EmitTCP( uint8_t );
 typedef enum {
 	CLOSED = 0,
 	ESTABLISHED,
+	CLOSING_WAIT,
+	CLOSING_WAIT2,  //Currently unused.
 } connection_state;
 
 //Size is 32 bytes (try to keep this as low as possible)

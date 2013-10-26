@@ -22,6 +22,7 @@ void Uint32To10Str( char * sto, uint32_t indata )
 		place /= 10;
 		ct = 0;
 	}
+	if( pl == 0 ) sto[pl++] = '0';
 	sto[pl] = 0;
 }
 
@@ -50,29 +51,4 @@ void Uint8To16Str( char * str, uint8_t val )
 	str[2] = 0;
 }
 
-void StrTack( char * str, uint16_t * optr, const char * strin )
-{
-	uint16_t sl = strlen( strin );
-	memcpy( str + *optr, strin, sl );
-	*optr += sl;
-}
 
-#ifdef __AVR__
-#include <avr/pgmspace.h>
-
-void PgmStrTack( char * str, uint16_t * optr, const char * strin )
-{
-	uint8_t r;
-	do
-	{
-		r = pgm_read_byte(strin++);
-		if( !r ) break;
-		str[((*optr)++)] = r;
-	} while( 1 );
-}
-#else
-void PgmStrTack( char * str, uint16_t * optr, const char * strin )
-{
-	StrTack( str, optr, strin );
-}
-#endif

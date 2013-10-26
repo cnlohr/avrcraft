@@ -96,7 +96,6 @@ void DoCustomPreloadStep( uint8_t playerid )
 	Sstring( "", 0 );
 	DoneSend();
 
-
 	p->custom_preload_step = 0;
 
 
@@ -118,11 +117,7 @@ void PlayerTickUpdate( int playerid )
 
 		if( p->y < 0 )
 		{
-			p->x = (1<<FIXEDPOINT)/2;
-			p->y = 100*(1<<FIXEDPOINT);
-			p->stance = p->y + (1<<FIXEDPOINT);
-			p->z = (1<<FIXEDPOINT)/2;
-			p->need_to_send_lookupdate = 1;
+			p->need_to_respawn = 1;
 		}
 	}
 }
@@ -167,7 +162,6 @@ void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 	{
 		//SwitchToBroadcast();
 		//TODO XXX This should be broadcast.
-
 		StartSend();
 		Sbyte( 0x3d ); //effect
 		Sint( didflip + 999 );
@@ -251,7 +245,6 @@ void PlayerUpdate( uint8_t playerid )
 }
 
 
-void SetServerName( const char * stname );
 
 uint8_t ClientHandleChat( char * chat, uint8_t chatlen )
 {
@@ -260,7 +253,6 @@ uint8_t ClientHandleChat( char * chat, uint8_t chatlen )
 		if( strncmp( &chat[1], "title", 5 ) == 0 && chatlen > 8 )
 		{
 			chat[chatlen] = 0;
-			SetServerName( &chat[7] );
 			return 0;
 		}
 	}

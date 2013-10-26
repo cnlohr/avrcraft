@@ -15,6 +15,7 @@ void Uint8To10Str( char * str, uint8_t val );
 //Convert an int to hex.  Pass in 3-byte buffer.  number->hexstring
 void Uint8To16Str( char * str, uint8_t val );
 
+/*
 //XXX This function should really leave!!!
 //Tack two strings together.
 void StrTack( char * str, uint16_t * optr, const char * strin );
@@ -24,6 +25,6 @@ void PgmStrTack( char * str, uint16_t * optr, const char * strin );
 
 //Only strin is a pgmstr
 void PgmStrTack( char * str, uint16_t * optr, const char * strin );
-
+*/
 
 #endif

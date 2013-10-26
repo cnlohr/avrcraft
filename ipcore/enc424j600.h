@@ -3,7 +3,7 @@
 #ifndef _enc424j600_H
 #define _enc424j600_H
 
-#include "eth_config.h"
+#include <eth_config.h>
 #include "enc424j600_regs.h"
 #include <avr/io.h>
 
@@ -62,7 +62,7 @@ void enc424j600_pushstr( const char * msg );
 void enc424j600_pushblob( const uint8_t * data, uint8_t len );
 void enc424j600_pushpgmblob( const uint8_t * data, uint8_t len );
 #define enc424j600_push8  espiW
-void enc424j600_pushzeroes( uint8_t nrzeroes ) { while( nrzeroes-- ) enc424j600_push8(0); }
+inline void enc424j600_pushzeroes( uint8_t nrzeroes ) { while( nrzeroes-- ) enc424j600_push8(0); }
 void enc424j600_push16( uint16_t v );
 
 //XXX: Todo: see if we can find a faster way of invoking espiR.

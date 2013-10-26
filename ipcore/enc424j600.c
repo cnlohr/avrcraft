@@ -344,7 +344,7 @@ void enc424j600_wait_for_dma()
 {
 	uint8_t i = 0;
 	//wait for previous DMA operation to complete
-	while( ( enc_read_ctrl_reg8_common( EECON1L ) & _BV(5) )  &&  (i++ < 250 ) ) standarddelay();
+	while( ( enc_read_ctrl_reg8_common( EECON1L ) & _BV(5) )  &&  (i++ < 250 ) ) standarddelay(); //This can wait up to 3.75mS
 }
 
 

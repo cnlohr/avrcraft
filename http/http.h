@@ -31,7 +31,7 @@
 void HTTPInit(uint8_t id, uint8_t socket );
 void HTTPGotData( uint8_t id, uint16_t len );
 void HTTPClose( ); //Must be called from within an HTTP Callback.
-void HTTPTick();
+void HTTPTick( uint8_t timedtick ); //you can call this a LOT if you want fast transfers, but be sure only to call it with a 1 at the update tick rate.
 
 extern struct HTTPConnection * curhttp;
 

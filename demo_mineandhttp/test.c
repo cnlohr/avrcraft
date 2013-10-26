@@ -118,7 +118,8 @@ void TCPConnectionClosing( uint8_t conn )
 #ifndef NO_HTTP
 	else
 	{
-		HTTPClose( conn-1 );
+		curhttp = &HTTPConnections[conn-1];
+		HTTPClose(  );
 	}
 #endif
 }
@@ -216,21 +217,8 @@ void DoneBroadcast()
 	incirc = 0;
 }
 
-void Sbyte( uint8_t byte ) //DUMBCRAFT
+void extSbyte( uint8_t byte ) //DUMBCRAFT
 {
-/*
-	if( disable )
-	{
-		return;
-	}
-
-	if( !TCPCanSend( lastconnection ) )
-	{
-		sendstr( "WARNING: TRYING TO SEND WHEN CANNOT SEND\n" );
-		disable = 1;
-		return;
-	}
-*/
 	if( !incirc )
 	{
 		if( bytespushed == 0 )

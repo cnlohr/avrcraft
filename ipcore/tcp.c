@@ -10,6 +10,13 @@
 #include <string.h>
 #include "avr_print.h"
 
+#if defined( MUTE_PRINTF ) && 0
+#include <stdio.h>
+#define MARK(x...) printf(x)
+#else
+#define MARK(x,...)
+#endif
+
 #ifdef INCLUDE_TCP
 
 struct tcpconnection TCPs[TCP_SOCKETS];
@@ -69,6 +76,7 @@ static void write_tcp_header( uint8_t c )
 	PUSH16( t->this_port );
 	PUSH16( t->dest_port );
 	PUSH32( t->seq_num );
+//	PUSH32( (t->sendtype&ACKBIT)?t->ack_num:0 );
 	PUSH32( t->ack_num );
 	PUSH( (TCP_HEADER_LENGTH/4)<<4 ); //Data offset, reserved, NS flags all 0
 
@@ -97,7 +105,12 @@ static void UpdateRemoteMAC( uint8_t * c )
 
 void InitTCP()
 {
-	//Eh?
+	uint8_t i;
+	for( i = 0; i < TCP_SOCKETS; i++ )
+	{
+		struct tcpconnection * t = &TCPs[i];
+		t->state = 0;
+	}
 }
 
 
@@ -155,6 +168,8 @@ void HandleTCP(uint16_t iptotallen)
 //		t->seq_num = t->seq_num;
 
 		//The syn overrides everything, so we can return.
+
+		MARK( "__syn %d\n", rsck);
 		goto end_and_emit;
 	}
 #endif
@@ -164,7 +179,17 @@ void HandleTCP(uint16_t iptotallen)
 	//If we don't have a real connection, we're going to have to bail here.
 	if( !rsck )
 	{
-		goto reset_conn0;
+		//XXX: Tricky: Do we have to reject spurious ACK packets?  Perhaps they are from keepalive
+		if( flags & ( PSHBIT | SYNBIT | FINBIT ) )
+		{
+			MARK( "__reset0" );
+			goto reset_conn0;
+		}
+		else
+		{
+			enc424j600_finish_callback_now();
+			return;
+		}
 	}
 
 	if( flags & RSTBIT)
@@ -172,6 +197,7 @@ void HandleTCP(uint16_t iptotallen)
 		TCPConnectionClosing( rsck );
 		t->sendtype = RSTBIT | ACKBIT;
 		t->state = 0;
+		MARK( "__rstbit %d\n", rsck );
 		goto send_early;
 	}
 
@@ -193,6 +219,7 @@ void HandleTCP(uint16_t iptotallen)
 		//Lost a packet...
 		if( diff < 0 )
 		{
+			MARK( "__badack %d", rsck );
 		}
 		//XXX TODO THIS IS PROBABLY WRONG  (was <=, meaning it could throw away packets)
 		else if( diff == 0 )
@@ -204,18 +231,38 @@ void HandleTCP(uint16_t iptotallen)
 
 			t->seq_num = nextseq;
 			//t->seq_num = t->seq_num;
+//			MARK( "__goodack" );
 		}
 	}
 
-	//XXX TODO Handle FIN correctly.
 	if( flags & FINBIT )
 	{
-		t->ack_num++;              //SEQ NUM
-		t->sendtype = ACKBIT | FINBIT;
+		if( t->state == CLOSING_WAIT )
+		{
+			t->sendtype = ACKBIT;
+			t->ack_num = sequence_num+1;
+			t->state = 0;
+			MARK( "__clodone %d", rsck );
+			goto send_early;
+		}
+		else
+		{
+			//XXX TODO Handle FIN correctly.
+			t->ack_num++;              //SEQ NUM
+			t->sendtype = ACKBIT | FINBIT;
+			t->state = CLOSING_WAIT;
+			TCPConnectionClosing( rsck );
+			MARK( "__finbit %d\n", rsck );
+			goto send_early;
+		}
+	} else if( t->state == CLOSING_WAIT )
+	{
 		t->state = 0;
-		TCPConnectionClosing( rsck );
 		goto send_early;
 	}
+
+
+
 
 	//XXX: TODO: Consider if time_since_sent is still set...
 	//This is because if we have a packet that was lost, we can't plough over it with an ack.
@@ -270,8 +317,9 @@ void HandleTCP(uint16_t iptotallen)
 
 reset_conn0:
 	rsck = 0;
-	TCPs[0].ack_num = 0;//sequence_num;
-	TCPs[0].sendtype = RSTBIT;
+	TCPs[0].ack_num = sequence_num;
+	TCPs[0].seq_num = ack_num;
+	TCPs[0].sendtype = RSTBIT | FINBIT | ACKBIT;
 	TCPs[0].state = 0;
 
 send_early: //This requires a RST to be sent back.
@@ -327,11 +375,18 @@ void TickTCP()
 
 		if( t->time_since_sent > TCP_TICKS_BEFORE_RESEND )
 		{
+			if( t->state == CLOSING_WAIT )
+			{
+				MARK( "__Closeout %d\n", i );
+				t->state = 0;
+				continue;
+			}
 			enc424j600_xmitpacket( t->sendptr, t->sendlength );
 
 			t->time_since_sent = 1;
 			if( t->retries++ > TCP_MAX_RETRIES )
 			{
+				MARK( "__rexmit %d\n", i );
 				TCPConnectionClosing( i );
 				t->state = 0;
 			}
@@ -342,10 +397,12 @@ void TickTCP()
 //XXX TODO This needs to be done better.
 void RequestClosure( uint8_t c )
 {
-	if( !TCPs[c].state ) return;
-	TCPs[c].sendtype = FINBIT;//RSTBIT;
-//	TCPs[c].state = 0;
+	if( !TCPs[c].state || TCPs[c].state == CLOSING_WAIT ) return;
+	TCPs[c].sendtype = FINBIT|ACKBIT;//RSTBIT;
+	TCPs[c].state = CLOSING_WAIT;
 	TCPs[c].time_since_sent = 0;
+
+	MARK("__req_closure %d\n", c);
 //	TCPs[c].seq_num--; //???
 	StartTCPWrite( c );
 	EndTCPWrite( c );	
@@ -377,7 +434,6 @@ void EndTCPWrite( uint8_t c )
 
 //	payloadlen = length - 34 - 20;
 
-	//Expecting an ACK.
 	if( t->sendtype & ( PSHBIT | SYNBIT | FINBIT ) ) //PSH, SYN, RST or FIN packets
 	{
 		t->time_since_sent = 1;

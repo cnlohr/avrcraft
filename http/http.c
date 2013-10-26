@@ -94,7 +94,8 @@ void HTTPGotData( uint8_t id, uint16_t len )
 			len = 0;
 			break;
 		case TCP_WAIT_CLOSE:
-			HTTPClose( id );
+			printf( "__HTTPCLose1\n" );
+			HTTPClose( );
 			break;
 		default:
 			break;
@@ -102,7 +103,7 @@ void HTTPGotData( uint8_t id, uint16_t len )
 	}
 }
 
-void HTTPTick()
+void HTTPTick( uint8_t timed )
 {
 	uint8_t i;
 	for( i = 0; i < HTTP_CONNECTIONS; i++ )
@@ -110,6 +111,8 @@ void HTTPTick()
 		curhttp = &HTTPConnections[i];
 		switch( curhttp->state )
 		{
+		case TCP_STATE_NONE: //do nothing if no state.
+			break;
 		case TCP_STATE_DATA_XFER:
 			if( TCPCanSend( curhttp->socket ) )
 			{
@@ -125,11 +128,20 @@ void HTTPTick()
 			break;
 		case TCP_WAIT_CLOSE:
 			if( TCPCanSend( curhttp->socket ) )
+			{
+				printf( "HTTPCLose2\n");
 				HTTPClose( );
+			}
 			break;
 		default:
-			if( curhttp->timeout++ > HTTP_SERVER_TIMEOUT )
-				HTTPClose( i );
+			if( timed )
+			{
+				if( curhttp->timeout++ > HTTP_SERVER_TIMEOUT )
+				{
+					printf( "HTTPClose3\n" );
+					HTTPClose( );
+				}
+			}
 		}
 	}
 
@@ -141,6 +153,7 @@ void HTTPHandleInternalCallback( )
 
 	if( curhttp->isdone )
 	{
+		printf( "HTTPClose4\n" );
 		HTTPClose( );
 		return;
 	}

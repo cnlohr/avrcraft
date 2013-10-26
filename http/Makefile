@@ -15,7 +15,7 @@ SRCS = example.c  \
 	../mfs/mfs.c \
 	../microsd/microsd.c \
 	../microsd/basicfat.c \
-#	myfiles.c
+	myfiles.c
 
 myfiles.c : page ../mfs/mfsmaker
 	../mfs/mfsmaker $< $@
@@ -23,14 +23,14 @@ myfiles.c : page ../mfs/mfsmaker
 PROCESSOR=atmega328
 PROGRAMCODE=m328
 COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft -I../mfs
-CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=28636000UL -DMUTE_PRINTF #-DNO_HTTP #-Wall  
+CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=20000000UL #-DMUTE_PRINTF #-DNO_HTTP #-Wall  
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c
 EXTRA_LD_FLAGS=-Wl,--relax -Wa,-a,-ad -mcall-prologues 
 
 
 program.elf : $(SRCS)
-	avr-gcc --combine -fwhole-program -I -mmcu=$(PROCESSOR) $(CFLAGS) -o $@ $^ -L /usr/lib64/binutils/avr/2.19.1 $(EXTRA_LD_FLAGS) > program.lst
+	avr-gcc -flto -fwhole-program -I -mmcu=$(PROCESSOR) $(CFLAGS) -o $@ $^ -L /usr/lib64/binutils/avr/2.19.1 $(EXTRA_LD_FLAGS) > program.lst
 	avr-size -A $@
 	avr-objdump program.elf -t > program.map
 

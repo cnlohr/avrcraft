@@ -15,16 +15,18 @@
 #define RUNSPEED 5
 #define WALKSPEED 3
 
-#define SENDBUFFERSIZE 128
+#define SENDBUFFERSIZE  128
 
-//#define STATIC_SERVER_STAT_STRING
-//#define STATIC_MOTD_NAME
-#define MOTD_NAME my_server_name
-extern char my_server_name[];
+#define STATIC_SERVER_STAT_STRING
+#define STATIC_MOTD_NAME
 
-#define INCLUDE_ANNOUNCE_UTILS
+#define MOTD_NAME "hello"
+//extern char my_server_name[];
+
+//#define INCLUDE_ANNOUNCE_UTILS
 
 #define MINECRAFT_PORT 25565
 #define MINECRAFT_PORT_STRING "25565"
 
 #endif
+

@@ -18,6 +18,9 @@
 #include "avr_print.h"
 #include <avr/pgmspace.h> 
 #else
+
+#define pgm_read_byte(x) (*(x))
+
 #define PROGMEM
 #define PSTR
 #define memcpy_P memcpy
@@ -46,9 +49,95 @@ const uint8_t default_spawn_metadata[] PROGMEM = {
 	0x7F // EOL
 };
 
+const char pingjson1[] PROGMEM = "{\"description\":\"";
+const char pingjson2[] PROGMEM = "\", \"players\":{\"max\":";
+const char pingjson3[] PROGMEM = ",\"online\":";
+const char pingjson4[] PROGMEM = "},\"version\":{\"name\":\""LONG_PROTO_VERSION"\",\"protocol\":"PROTO_VERSION_STR"}}";
+
 uint8_t dumbcraft_playercount;
 
+/////////////////////////////////////////BIZARRE UTILITIES/////////////////////
+
+void mstrcat( char * out, char * in, int maxlen )
+{
+	uint8_t i, j = 0;
+	for( i = 0; i < maxlen; i++ )
+	{
+		if( out[i] == 0 ) break;
+	}
+
+	for( ; i < maxlen; i++ )
+	{
+		out[i] = in[j++];
+	}
+
+	if( i < maxlen )
+		out[i] = 0;
+}
+
+void mstrcatp( char * out, const char * in, int maxlen )
+{
+	uint8_t i, j = 0;
+	for( i = 0; i < maxlen; i++ )
+	{
+		if( out[i] == 0 ) break;
+	}
+
+	for( ;i < maxlen; i++ )
+	{
+		out[i] = pgm_read_byte(&in[j++]);
+	}
+
+	if( i < maxlen )
+		out[i] = 0;
+}
+
 //////////////////////////////////////////READING UTILITIES////////////////////
+
+uint16_t cmdremain = 0;
+
+uint8_t dcrbyte()
+{
+	if( cmdremain )
+	{
+		cmdremain--;
+		return Rbyte();
+	}
+}
+
+static uint8_t localsendbuffer[SENDBUFFERSIZE];
+static uint8_t sendsize;
+
+void StartSend()
+{
+	sendsize = 0;
+}
+
+void DoneSend()
+{
+	uint8_t i;
+	
+	if( sendsize > 127 )
+	{
+		extSbyte( 128 | (sendsize&127) );
+		extSbyte( sendsize >> 7 );
+	}
+	else
+	{
+		extSbyte( sendsize );
+	}
+
+	for( i = 0; i < sendsize; i++ )
+	{
+		extSbyte( localsendbuffer[i] );
+	}
+}
+
+void Sbyte( uint8_t b )
+{
+	if( sendsize < SENDBUFFERSIZE )
+		localsendbuffer[sendsize++] = b;
+}
 
 //Read in a buffer from the current connection of specified size.
 //Can only be done in a read callback.
@@ -57,40 +146,68 @@ void Rbuffer( uint8_t * buffer, uint8_t size )
 	uint8_t i;
 	for( i = 0; i < size; i++ )
 	{
-		buffer[i] = Rbyte();
+		buffer[i] = dcrbyte();
 	}
+}
+
+void Rdump( uint16_t length )
+{
+	while( length-- ) dcrbyte();
 }
 
 //Reading utilities for various types.
 uint32_t Rint()
 {
 	uint32_t ret = 0;
-	ret |= ((uint32_t)Rbyte())<<24;
-	ret |= ((uint32_t)Rbyte())<<16;
-	ret |= Rbyte()<<8;
-	ret |= Rbyte();
+	ret |= ((uint32_t)dcrbyte())<<24;
+	ret |= ((uint32_t)dcrbyte())<<16;
+	ret |= dcrbyte()<<8;
+	ret |= dcrbyte();
 	return ret;
 }
 
 uint16_t Rshort()
 {
 	uint16_t ret = 0;
-	ret |= Rbyte()<<8;
-	ret |= Rbyte();
+	ret |= dcrbyte()<<8;
+	ret |= dcrbyte();
 	return ret;
+}
+
+uint16_t Rvarint()
+{
+	uint16_t ret = dcrbyte();
+	if( ret & 0x80 )
+	{
+		ret = (ret&0x7f)|(dcrbyte()<<7);
+	}
+
+	return ret;
+}
+
+uint16_t Rslot()
+{
+	uint16_t ret = Rshort();
+	uint8_t  count = dcrbyte();
+	uint16_t damage = Rshort();
+	uint16_t nbt = Rshort();
+	if( nbt != 0xffff )
+	{
+		Rdump( nbt );
+	}
 }
 
 void Rstring( char * data, int16_t maxlen )
 {
-	uint16_t toread = Rshort();
+	uint16_t toread = Rvarint();
 	uint16_t len = 0;
 	//if( toread > maxlen ) toread = maxlen;
 	while( toread-- )
 	{
 		if( len < maxlen )
-			data[len++] = Rshort();
+			data[len++] = dcrbyte();
 		else
-			Rshort();
+			dcrbyte();
 	}
 }
 
@@ -117,6 +234,17 @@ int16_t Rfloat()
 
 //send- utility functions
 
+void Svarint( uint16_t v )
+{
+	if( v > 127 )
+	{
+		Sbyte( 128 | (v&127) );
+		Sbyte( v >> 7 );
+	}
+	else
+		Sbyte( v );
+}
+
 void Sint( uint32_t o )
 {
 	Sbyte( o >> 24 );
@@ -136,10 +264,9 @@ void Sstring( const unsigned char * str, uint8_t len )
 {
 	if( len == 255 ) len = strlen( str );
 	uint8_t i;
-	Sshort( len );
+	Svarint( len );
 	for( i = 0; i < len; i++ )
 	{	
-		Sbyte( 0 );
 		Sbyte( str[i] );
 	}
 }
@@ -169,11 +296,7 @@ void SbufferPGM( const uint8_t * buf, uint8_t len )
 	uint8_t i;
 	for( i = 0; i < len; i++ )
 	{	
-#ifdef __AVR__
 		Sbyte( pgm_read_byte( &buf[i] ) );
-#else
-		Sbyte( buf[i] );
-#endif
 	}
 }
 
@@ -198,7 +321,10 @@ void Sfloat( int16_t i )
 void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val )
 {
 	char stmp[5];
-	Sbyte( 0x82 ); //sign update
+
+
+	StartSend();
+	Sbyte( 0x33 ); //sign update (new)
 	Sint( x );
 	Sshort( y );
 	Sint( z );
@@ -209,46 +335,53 @@ void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val )
 	Uint8To16Str( stmp+2, val );
 	Sstring( stmp, -1 );
 	Sstring( stmp, 0 );
+	DoneSend();
 }
 
 //Update a block at a given x, y, z (good for 0..255 in each dimension)
 void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta )
 {
-	Sbyte(0x35);
+	StartSend();
+	Sbyte(0x23);  //NEW
 	Sint( x ); //x
 	Sbyte( y ); //y
 	Sint( z ); //z
-	Sshort( bt ); //block type
+	Svarint( bt ); //block type
 	Sbyte( meta ); //metadata
+	DoneSend();
 }
 
 //Spawn player (used to notify other clients about the spawnage)
 void SSpawnPlayer( uint8_t pid )
 {
 	struct Player * p = &Players[pid];
+	char stmp[5];
+	Uint8To16Str( stmp, pid + PLAYER_EID_BASE );
 
-	Sbyte( 0x14 );
-
-	Sint( pid + PLAYER_EID_BASE );
+	StartSend();
+	Sbyte( 0x0c );  //new
+	Sstring( stmp, -1 );
 	Sstring( p->playername, -1 );
 	Sint( p->x );
 	Sint( p->y );
 	Sint( p->z );
 	Sbyte( p->nyaw );
 	Sbyte( p->npitch );
-	Sshort( 0 );
-
+	Sshort( 0 ); //Current item
 	SbufferPGM( default_spawn_metadata, sizeof( default_spawn_metadata ) );
+	DoneSend();
 }
 
 void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed )
 {
-	Sbyte(0x2c);
+	StartSend();
+	Sbyte(0x20); //NEW
 	Sint( playerno );
 	Sint( 1 );
 	Sstring( "generic.movementSpeed", strlen( "generic.movementSpeed" ) );	
 	Sdouble( speed );
 	Sshort(0);
+	DoneSend();
 }
 
 
@@ -306,7 +439,7 @@ void UpdateServer()
 {
 	uint8_t player, i;
 	uint16_t i16;
-	uint8_t localplayercount;
+	uint8_t localplayercount = 0;
 	for( player = 0; player < MAX_PLAYERS; player++ )
 	{
 		struct Player * p = &Players[player];
@@ -317,6 +450,39 @@ void UpdateServer()
 
 		p->update_number++;
 		SendStart( player );
+
+		if( p->need_to_reply_to_ping )
+		{
+			StartSend();
+			Sbyte( 0x01 );
+			Sbuffer( p->playername, 8 );
+			DoneSend();
+			p->need_to_reply_to_ping = 0;
+		}
+
+		if( p->need_to_send_playerlist )
+		{
+			unsigned length = sizeof( pingjson1 ) + sizeof( pingjson2 ) + sizeof( pingjson3 ) + sizeof( pingjson4 ) + 24 + strlen( MOTD_NAME );
+			char buffo[length];
+			char maxplayers[12];
+			char curplayers[12];
+			buffo[0] = 0;
+			Uint32To10Str( maxplayers, MAX_PLAYERS );
+			Uint32To10Str( curplayers, dumbcraft_playercount );
+			mstrcatp( buffo, pingjson1, length );
+			mstrcat( buffo, MOTD_NAME, length );
+			mstrcatp( buffo, pingjson2, length );
+			mstrcat( buffo, maxplayers, length );
+			mstrcatp( buffo, pingjson3, length );
+			mstrcat( buffo, curplayers, length );
+			mstrcatp( buffo, pingjson4, length );
+			StartSend();
+			Sbyte( 0x00 );
+			Sstring( buffo, -1 );
+			DoneSend();
+
+			p->need_to_send_playerlist = 0;
+		}
 
 		//If we didn't finish getting all the broadcast data last time
 		//We must do that now.
@@ -368,16 +534,28 @@ void UpdateServer()
 			p->tick_since_update = 0;
 		}
 
+
+		if( p->need_to_respawn )
+		{
+			p->x = (1<<FIXEDPOINT)/2;
+			p->y = 100*(1<<FIXEDPOINT);
+			p->stance = p->y + (1<<FIXEDPOINT);
+			p->z = (1<<FIXEDPOINT)/2;
+			p->need_to_send_lookupdate = 1;
+			p->need_to_respawn = 0;
+		}
+
 		if( p->need_to_send_lookupdate )
 		{
-			Sbyte(0x0d);
+			StartSend();
+			Sbyte(0x08); //new
 			Sdouble( p->x );
 			Sdouble( p->stance );
-			Sdouble( p->y );
 			Sdouble( p->z );
 			Sfloat( p->yaw );
 			Sfloat( p->pitch );
 			Sbyte(p->onground);
+			DoneSend();
 
 			p->need_to_send_lookupdate = 0;
 		}
@@ -387,14 +565,18 @@ void UpdateServer()
 		{
 			uint8_t i;
 
-			Sbyte( 0x09 );
-			Sint( WORLDTYPE ); //overworld
-			Sbyte( 0 ); //peaceful
+			StartSend();
+			Sbyte( 0x01 );  //New
+			Sint( player + PLAYER_EID_BASE );
 			Sbyte( GAMEMODE ); //creative
-			Sshort( 256 ); //world height
-			Sstring( "default", 8 );
+			Sbyte( WORLDTYPE ); //overworld
+			Sbyte( 0 ); //peaceful
+			Sbyte( MAX_PLAYERS );
+			Sstring( "default", 7 );
+			DoneSend();
 
 			p->need_to_spawn = 0;
+
 			p->next_chunk_to_load = 1;
 			p->has_logged_on = 1;
 			p->just_spawned = 1;  //For next time round we send to everyone
@@ -430,82 +612,55 @@ void UpdateServer()
 				uint16_t i;
 				p->next_chunk_to_load++;
 
-				Sbyte( 0x33 );
+				StartSend();
+				Sbyte( 0x21 );
 				Sint( ichk/MAPSIZECHUNKS );
 				Sint( ichk%MAPSIZECHUNKS );
-				Sbyte( 1 );
+				Sbyte( 1 ); //Continuous ground-up
 				Sshort( 0x08 ); //bit-map
 				Sshort( 0x08 ); //bit-map
 				Sint( sizeof( mapdata ) );
 
-
 				SbufferPGM( mapdata, sizeof( mapdata ) );
+				DoneSend();
 			}
 		}
 
 		//This is triggered when players want to actually join.
 		if( p->need_to_login )
 		{
+			char stmp[5];
+			Uint8To16Str( stmp, player + PLAYER_EID_BASE );
+
+			printf( "Sending login.\n" );
+			printf( "%s\n", p->playername );
 			p->need_to_login = 0;
-			Sbyte( 0x01 ); //Login request
-			Sint( player );
-			Sstring( "default", 7 );
-			Sbyte( GAMEMODE ); //creative
-			Sbyte( WORLDTYPE ); //overworld
-			Sbyte( 0 ); //peaceful
-			Sbyte( 0 ); //not used.
-			Sbyte( MAX_PLAYERS );
+			StartSend();
+			Sbyte( 0x02 ); //Login success
+			Sstring( stmp, -1 );
+			Sstring( p->playername, -1 );
+
+
+			DoneSend();
+
+			//Do this, it is commented out for other reasons.
 			p->need_to_spawn = 1;
-//			p->next_chunk_to_load = 1;
 
 		}
-		if( p->need_to_send_playerlist )
-		{
 
-#ifdef STATIC_SERVER_STAT_STRING
-#ifndef STATIC_MOTD_NAME
-#error Cannot make a dumb server response string if you have a dynamic server name.
-#endif
-#define VERSION_AND_STRING_AND_ALL  "\xa7\x31\x00"PROTO_VERSION_STR"\x00"LONG_PROTO_VERSION"\x00"MOTD_NAME"\x000\x00"MAX_PLAYERS_STRING
-			uint8_t stt[sizeof( VERSION_AND_STRING_AND_ALL )];
-			memcpy_P( stt, PSTR( VERSION_AND_STRING_AND_ALL ), sizeof( VERSION_AND_STRING_AND_ALL ) );
-			Sbyte( 0xff );
-			Sstring( stt, sizeof( VERSION_AND_STRING_AND_ALL ) );
-
-#else
-			uint16_t optr = 0;
-			uint8_t stt[40];
-
-#define VERSION_AND_STRING  "\xa7\x31\x00"PROTO_VERSION_STR"\x00"LONG_PROTO_VERSION
-			memcpy_P( stt, PSTR( VERSION_AND_STRING ), sizeof( VERSION_AND_STRING ) );
-			optr = sizeof( VERSION_AND_STRING );
-
-#ifdef STATIC_MOTD_NAME
-
-			PgmStrTack( stt, &optr, PSTR( MOTD_NAME ) ); 	stt[optr++] = 0;
-#else
-			StrTack( stt, &optr, MOTD_NAME ); 	stt[optr++] = 0;
-#endif
-			Uint8To10Str( stt + optr, dumbcraft_playercount );
-			optr += 4;
-			PgmStrTack( stt, &optr, PSTR( MAX_PLAYERS_STRING ) );
-
-			Sbyte( 0xff );
-			Sstring( stt, optr );
-#endif
-
-			p->need_to_send_playerlist = 0;
-		}
 
 		if( p->need_to_send_keepalive )
 		{
+/*
+			StartSend();
 			Sbyte( 0x00 );
-			p->keepalivevalue++;
-			p->keepalivevalue &= 0x7f;
-			Sint( p->keepalivevalue );
-
+			Sint( p->keepalive_id );
+			DoneSend();
+*/
+			//TODO
 			p->need_to_send_keepalive = 0;
 		}
+
 
 		if( p->has_logged_on && !p->doneupdatespeed )
 		{
@@ -574,7 +729,7 @@ void TickServer()
 			int16_t diffz = p->z - p->oz;
 			if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
 			{
-				Sbyte( 0x22 );
+				Sbyte( 0x18 );  //New
 				Sint( player + PLAYER_EID_BASE );
 				Sint( p->x );
 				Sint( p->y );
@@ -584,7 +739,7 @@ void TickServer()
 			}
 			else
 			{
-				Sbyte( 0x1f );
+				Sbyte( 0x15 ); //New
 				Sint( player + PLAYER_EID_BASE );
 				Sbyte( diffx );
 				Sbyte( diffy );
@@ -598,11 +753,11 @@ void TickServer()
 
 		if( p->pitch != p->op || p->yaw != p->ow )
 		{
-			Sbyte( 0x20 );
+			Sbyte( 0x16 ); //New
 			Sint( player + PLAYER_EID_BASE );
 			Sbyte( p->nyaw );
 			Sbyte( p->npitch );
-			Sbyte( 0x23 );
+			Sbyte( 0x19 ); //New
 			Sint( player + PLAYER_EID_BASE );
 			Sbyte( p->nyaw );
 
@@ -632,7 +787,18 @@ void RemovePlayer( uint8_t playerno )
 	//todo send 0xff command
 }
 
+void DumpRemain()
+{
+	if( !cmdremain ) return;
+//	printf( "(+%d)", cmdremain );
+	while( cmdremain-- )
+	{
+//		printf( "%02x ", Rbyte() );
+		Rbyte();
+	}
 
+	return;
+}
 
 //From user to dumbcraft (you call)
 void GotData( uint8_t playerno )
@@ -640,7 +806,7 @@ void GotData( uint8_t playerno )
 #ifdef DEBUG_DUMBCRAFT
 	static uint8_t lastcmd;
 #endif
-	uint8_t cmd, i8;
+	uint8_t i8;
 	uint16_t i16;
 	struct Player * p = &Players[playerno];
 	thisplayer = playerno;
@@ -654,151 +820,261 @@ void GotData( uint8_t playerno )
 
 	while( CanRead() )
 	{
-		cmd = Rbyte();
+		cmdremain = 0xffff;
+		cmdremain = Rvarint();
+//		if( cmdremain > 127 ) cmdremain-=2;
+//		else cmdremain--;
+		uint8_t cmd = dcrbyte();
+
+		if( p->handshake_state == 0 )
+		{
+			if( cmd == 0 )
+			{
+				i16 = Rvarint();
+				if( i16 != PROTO_VERSION )
+				{
+#ifdef DEBUG_DUMBCRAFT
+					printf("wrong version; got: %d; expected %d\n", i16, PROTO_VERSION );
+#endif
+					ForcePlayerClose( playerno, 'v' );				
+				}
+				Rstring( 0, 0 ); //server
+				Rshort(); //port
+				p->handshake_state = Rvarint();
+#ifdef DEBUG_DUMBCRAFT
+				printf(" Client switched mode to: %d\n", p->handshake_state );
+#endif
+			}
+		}
+		else if( p->handshake_state == 1 ) //Status
+		{
+			switch( cmd )
+			{
+				case 0x00: //Request
+					p->need_to_send_playerlist = 1;					
+					break;
+				case 0x01: //Ping
+					Rbuffer( p->playername, 8 );
+					p->need_to_reply_to_ping = 1;
+					break;
+				default:
+#ifdef DEBUG_DUMBCRAFT
+					printf( "Unknown status request (%d)\n", cmd );
+#endif
+					break;
+			}
+		}
+		else if( p->handshake_state == 2 )
+		{
+			switch( cmd )
+			{
+			case 0x00:
+				Rstring( p->playername, MAX_PLAYER_NAME-1 );
+				p->playername[MAX_PLAYER_NAME-1] = 0;
+				p->need_to_login = 1;
+				p->handshake_state = 3;
+				break;
+			default:
+				printf( "Confusing packet for mode 2.\n" );
+				break;
+			}
+		}
 		switch( cmd )
 		{
-		case 0x00: //Keep-alive response
-			if( Rint() == p->keepalivevalue )
-			{
-				p->ticks_since_heard = 0;
-				p->keepalivevalue |= 0x80;
-			}
-			break;
-		case 0x02:  //Player kind of wants to check out the server.
-			//Check protocol version
 
-			if( Rbyte() != PROTO_VERSION )
-			{
-				ForcePlayerClose( playerno, 'v' );
-#ifdef DEBUG_DUMBCRAFT
-				printf( "Bad proto v.\n" );
-#endif
-				return;
-			}
-			Rstring( p->playername, MAX_PLAYER_NAME );
-			Rstring( 0, 0 );
+		case 0x00:
+			p->need_to_send_keepalive = 1;
 			Rint();
-			p->need_to_login = 1;
+			//keep alive?
+			//p->keepalive_id = Rint();
 			break;
-		case 0x03: //Handle chat!  (I thought for a while before including this)
-			i16 = Rshort();
-			if( i16 < 100 )
-			{
-				chat = alloca( i16 );
 
-				chatlen = i16;
-				for( i8 = 0; i8 < i16; i8++ )
+		case 0x01: //Handle chat
+			i16 = Rvarint();
+
+			chatlen = ((i16)<MAX_CHATLEN)?i16:MAX_CHATLEN;
+			chat = alloca( chatlen+1 );
+			i8 = 0;
+
+			while( i16-- )
+			{
+				if( i8 < chatlen )
 				{
-					chat[i8] = Rshort();
+					chat[i8++] = dcrbyte();
 				}
 			}
+			chatlen++;
+			chat[i8] = 0;
 			break;
-		case 0x0a: //On-ground, client sends this to an annyoing degree.
-			p->onground = Rbyte();
+
+		case 0x02: //Use Entity
+			Rint();	 //Target
+			dcrbyte(); //Mouse
 			break;
-		case 0x0b: //Player position
+
+		case 0x03: //On-ground, client sends this to an annyoing degree.
+			p->onground = dcrbyte();
+			break;
+
+		case 0x04: //Player position
 			p->x = Rdouble();
 			p->y = Rdouble();
 			p->stance = Rdouble();
 			p->z = Rdouble();
-			p->onground = Rbyte();
+			p->onground = dcrbyte();
 			break;
-		case 0x0d: //Player Position and look
+
+		case 0x06: //Player Position and look
 			p->x = Rdouble();
 			p->y = Rdouble();
 			p->stance = Rdouble();
 			p->z = Rdouble();
-		case 0x0c: //Player look, only.
+		case 0x05: //Player look, only.
 			p->yaw = Rfloat();
 			p->pitch = Rfloat();
 			p->nyaw = p->yaw/45;    //XXX TODO PROBABLY SLOW seems to add <256 bytes, though.  Is there a better way?
 			p->npitch = p->pitch/45;//XXX TODO PROBABLY SLOW
-			p->onground = Rbyte();
+			p->onground = dcrbyte();
 			break;
-		case 0x0e: //player digging.
-			Rbyte(); //action player is taking against block
+
+		case 0x07: //player digging.
+			dcrbyte(); //action player is taking against block
 			Rint(); //block pos X
-			Rbyte(); //block pos Y
+			dcrbyte(); //block pos Y
 			Rint(); //block pos Z
-			Rbyte(); //which face?
+			dcrbyte(); //which face?
 			break;
-		case 0x0f:	//Block placement / right-click, used for levers.
+
+		case 0x08:	//Block placement / right-click, used for levers.
 		{
 			uint8_t x = Rint();
-			uint8_t y = Rbyte();
+			uint8_t y = dcrbyte();
 			uint8_t z = Rint();
-			Rbyte();
-			Rshort();
-			Rbyte();
-			Rbyte();
-			Rbyte();
+			dcrbyte();
+			Rslot();
+			dcrbyte();
+			dcrbyte();
+			dcrbyte();
 
 			PlayerClick( playerno, x, y, z );
 			break;
 		}
-		case 0x12: //animation
-			Rint(); //pid
-			Rbyte(); //animation id
+		case 0x09:  //Held item change
+			Rslot();
 			break;
-		case 0x13: //what is this? Entity action?
-		{
-			uint16_t ent = Rint();
-			uint8_t act = Rbyte();
-			if( ent == playerno )
-			{
-				switch (act)
-				{
-				case 0x04: //Player is running
-				case 0x05:
-					p->running = (act==0x04);
-					p->doneupdatespeed = 0;
-					break;
-				}
-			}
 
-			Rint(); //???
+
+		case 0x0a: //animation
+			Rint(); //pid
+			dcrbyte(); //animation id
 			break;
-		}
-		case 0xfe: //We probably should respond more intelligently, but for now.
-		{
-			Rbyte(); //magic?
-			p->need_to_send_playerlist = 1;
+
+		case 0x0b: //Entity action
+			Rint(); //eid
+			dcrbyte(); //action id
+			Rint(); //jump boost
 			break;
-		}
-		case 0xfa: //plugins (we drop them)  (and follow through to 0x74)
-			Rstring( 0, 0 );
-		case 0x74: //No idea what this is...
-		{
-			uint16_t rs;
-			rs = Rshort();
-			while( rs-- ) Rbyte();
+
+//XXX: BETWEEN HERE AND BELOW MAY NOT BE NEEDED FOR SMALL SYSTEMS
+/*
+		case 0x0c: //Steer vehicle
+			Rfloat(); //sideways
+			Rfloat(); //forward
+			dcrbyte(); //jump
+			dcrbyte(); //unmount
 			break;
-		}
-		case 0xcc: //language or something?
-		{
-			Rstring( 0, 0 );
-			Rint();
+
+
+		case 0x0d: //Close window
+			dcrbyte(); //window ID
 			break;
-		}
+
+		case 0x0e: //click window
+			dcrbyte(); //Window ID
+			Rshort(); //Slot
+			dcrbyte(); //button
+			Rshort(); //action #
+			dcrbyte(); //mode
+			Rslot(); //clicked item
+			break;
+
+		case 0x0f: //Confirm transaction
+			dcrbyte(); //Window ID
+			Rshort(); //action #
+			dcrbyte(); //confirmed?
+			break;
+
+		case 0x10: //Creative Inventory Action
+			Rshort();
+			Rslot();
+			break;
+
+		case 0x11: //Enchant Item
+			dcrbyte(); //Window
+			dcrbyte(); //Enchantment
+			break;
+
+		case 0x12: //Update Sign
+			Rint();   //X
+			Rshort(); //Y
+			Rint();   //Z
+			Rstring( 0, 0 ); //Line 1
+			Rstring( 0, 0 ); //Line 2
+			Rstring( 0, 0 ); //Line 3
+			Rstring( 0, 0 ); //Line 4
+			break;
+
+		case 0x13:	//Player abilities
+			dcrbyte(); //flags
+			Rfloat(); //flying speed
+			Rfloat(); //walking speed
+			break;
+
+		case 0x14: //Tab-complete.
+			Rstring( 0,0); //text so far
+			break;
+
+*/
+//End the probably unneded portion
+		case 0x15: //Client settings
+			Rstring( 0,0); //Locale
+			dcrbyte(); //view distance
+			dcrbyte(); //Chat flags
+			dcrbyte(); //unused
+			dcrbyte(); //Difficulty
+			dcrbyte(); //Show cape
+			break;
+
+		case 0x16:  //Client Status
+			switch( dcrbyte() )
+			{
+			case 0x00: //perform respawn.
+				p->need_to_respawn = 1;
+				break;
+				
+			default:
+				break;
+			}
+			break;
+
+		case 0x17://plugin message
+			Rstring( 0,0 );
+			Rdump( Rshort() );
+			break;
+
 		default:
 #ifdef DEBUG_DUMBCRAFT
 			printf( "UCMD: (LAST) %02x - NOW: %02x\n", lastcmd, cmd );
 			printf( "UPKT:\n" );
-			//for( i16 = thisptr; i16 < packetsize; i16++ )	
-			while( CanRead() )
-			{
-				unsigned char u = Rbyte();
-//				printf( "%02x (%c)", u, u );
-				printf( "%02x ", u );
-			}
-			printf( "\n" );
+			DumpRemain();
 #endif
-			return;
+			break;
 		}
 
 #ifdef DEBUG_DUMBCRAFT
 		lastcmd = cmd;
 #endif
+		DumpRemain();
 	}
 
 	if( chatlen )

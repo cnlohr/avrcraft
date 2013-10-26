@@ -43,13 +43,14 @@
 //It's the same size, faster, but not thread safe. Used in conjunction with ASM_SPI
 //NOTE: This does not work on the ATMega168 for some reason, even at lower speeds?
 //NOTE: This will not work at 28 MHz 
-#define ASM_REALLY_FAST_SPI
+//#define ASM_REALLY_FAST_SPI
+
 
 //Minimum MTU every host must be able to handle; 
 #define MAX_FRAMELEN     578
 
 //Do this to disable printf's and save space
-//#define MUTE_PRINTF
+#define MUTE_PRINTF
 
 //UDP is pretty well tested.  It takes up ~350 bytes
 //If you use UDP, you will need to implement the following function:
@@ -87,9 +88,9 @@
 
 //Additional applications
 #define INCLUDE_HTTP_SERVER
-#define HTTP_SERVER_TIMEOUT (10000) 
+#define HTTP_SERVER_TIMEOUT (1000)  //10 seconds
 #define HTTP_CONNECTIONS 6
-//#define HTTP_USE_MEMORY_FS
+#define HTTP_USE_MEMORY_FS
 
 
 //Scratchpad for sending out packets like UDP, ICMP, ARP, etc.

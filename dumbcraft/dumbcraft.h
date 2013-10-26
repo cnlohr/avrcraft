@@ -3,11 +3,12 @@
 #ifndef _DUMBCRAFT_H
 #define _DUMBCRAFT_H
 
-#define PROTO_VERSION 74
-#define PROTO_VERSION_STR "74"
-#define LONG_PROTO_VERSION "1.6.2"
+#define PROTO_VERSION 4
+#define PROTO_VERSION_STR "4"
+#define LONG_PROTO_VERSION "1.7.2"
 
 #define PLAYER_EID_BASE 0x20
+#define MAX_CHATLEN 100
 
 #include "dumbconfig.h"
 
@@ -25,11 +26,13 @@ void AddPlayer( uint8_t playerno );
 void RemovePlayer( uint8_t playerno );
 void GotData( uint8_t playerno );
 
+
+
 //you must provide (For communications, etc.)
 uint8_t Rbyte();
 uint8_t CanRead();
 void SendStart( uint8_t playerno ); //prepare a buffer for send
-void Sbyte( uint8_t byte );  //Push to either player _or_ circular buffer.
+void extSbyte( uint8_t byte );  //Push to either player _or_ circular buffer.
 uint8_t CanSend( uint8_t playerno ); //can this buffer be a send?
 void EndSend( );
 void ForcePlayerClose( uint8_t playerno, uint8_t reason ); //you still must call removeplayer, this is just a notification.
@@ -68,15 +71,19 @@ struct Player
 	uint8_t need_to_login:1;
 	uint8_t need_to_send_keepalive:1;
 	uint8_t need_to_send_lookupdate:1;
+	uint8_t need_to_reply_to_ping:1;
 	uint8_t next_chunk_to_load;
 	uint8_t custom_preload_step; //if nonzero, then do pre-load, when done, set to 0 and set p->need_to_send_lookupdate = 1;
 
+	uint8_t need_to_respawn:1;
+	uint8_t handshake_state;
 	uint8_t update_number;
 
 	uint8_t tick_since_update:1;
 	uint8_t ticks_since_heard;
-	uint8_t keepalivevalue;    //must be 128-255 to be valid.
 	uint8_t playername[MAX_PLAYER_NAME]; //todo: store playername length
+
+//	uint32_t keepalive_id; //can also be used for pinging
 } Players[MAX_PLAYERS];
 
 extern uint16_t dumbcraft_tick;
@@ -84,6 +91,9 @@ extern uint8_t dumbcraft_playercount;
 
 //Tools for the user:
 void Rbuffer( uint8_t * buffer, uint8_t size );
+void StartSend(); //For single packet.
+void DoneSend(); //For single packet
+void Sbyte( uint8_t b );
 uint32_t Rint();
 uint16_t Rshort();
 void Rstring( char * data, int16_t maxlen );

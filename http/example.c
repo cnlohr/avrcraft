@@ -47,8 +47,11 @@ uint8_t TCPReceiveSyn( uint16_t portno )
 	if( portno == 80 )
 	{
 		uint8_t ret = GetFreeConnection();
-		HTTPInit( ret, ret );
-		return ret;
+		if( ret < HTTP_CONNECTIONS )
+		{
+			HTTPInit( ret, ret );
+			return ret;
+		}
 	}
 
 	return 0;
@@ -57,7 +60,9 @@ uint8_t TCPReceiveSyn( uint16_t portno )
 void TCPConnectionClosing( uint8_t conn )
 {
 //	sendstr( "Lostconn\n" );
-	HTTPClose( conn );
+	printf( "HTTPCX %d\n", conn );
+	curhttp = &HTTPConnections[conn];
+	HTTPClose( );
 }
 
 uint8_t didsend;
@@ -113,6 +118,19 @@ void int8tohex( unsigned char v, char * data )
 	data[1] = (nibble<10)?(nibble+'0'):(nibble+'a'-10);
 }
 
+
+void int16tohex( unsigned short v, char * data )
+{
+	unsigned char nibble = v>>12;
+	data[0] = (nibble<10)?(nibble+'0'):(nibble+'a'-10);
+	nibble = (v>>8)&0x0f;
+	data[1] = (nibble<10)?(nibble+'0'):(nibble+'a'-10);
+	nibble = (v>>4)&0x0f;
+	data[2] = (nibble<10)?(nibble+'0'):(nibble+'a'-10);
+	nibble = v&0x0f;
+	data[3] = (nibble<10)?(nibble+'0'):(nibble+'a'-10);
+}
+
 void HTTPCustomCallback( )
 {
 	uint16_t i, bytestoread;
@@ -120,17 +138,92 @@ void HTTPCustomCallback( )
 
 	if( h->isdone )
 	{
+		printf( "HTTPCloseY\n" );
 		HTTPClose( h->socket );
 		return;
 	}
+
+	if( h->state_deets && !h->isfirst )
+	{
+		uint8_t j;
+		unsigned char i = h->state_deets;
+		char outb[129] = {0};
+		TCPs[h->socket].sendtype = ACKBIT | PSHBIT;
+		StartTCPWrite( h->socket );
+		memset( outb, 32, 128 );
+
+		int8tohex( TCPs[i].state, &outb[0] );
+		int16tohex( TCPs[i].this_port, &outb[4] );
+		int16tohex( TCPs[i].dest_port, &outb[9] );
+		int16tohex( TCPs[i].dest_addr>>16, &outb[14] );
+		int16tohex( TCPs[i].dest_addr, &outb[18] );
+
+		int16tohex( TCPs[i].seq_num>>16, &outb[23] );
+		int16tohex( TCPs[i].seq_num, &outb[27] );
+
+		int16tohex( TCPs[i].ack_num>>16, &outb[32] );
+		int16tohex( TCPs[i].ack_num, &outb[36] );
+
+		outb[44] = '/';
+
+		int8tohex( TCPs[i].time_since_sent, &outb[45] );
+		int16tohex( TCPs[i].idletime, &outb[48] );
+		int8tohex( TCPs[i].retries, &outb[53] );
+		int8tohex( TCPs[i].sendtype, &outb[56] );
+
+		outb[59] = '/';
+		int16tohex( TCPs[i].sendptr, &outb[60] );
+		int16tohex( TCPs[i].sendlength, &outb[65] );
+		outb[70] = ':';
+
+		int8tohex( HTTPConnections[i].state, &outb[71] );
+		int8tohex( HTTPConnections[i].state_deets, &outb[74] );
+
+		for( j = 0; j < 10; j++ )
+			if(  HTTPConnections[i].pathbuffer[j] )
+				outb[77+j] =  HTTPConnections[i].pathbuffer[j];
+
+		outb[89] = '*';
+		int8tohex( HTTPConnections[i].is_dynamic, &outb[90] );
+		int16tohex( HTTPConnections[i].timeout, &outb[93] );
+
+		int16tohex( HTTPConnections[i].bytesleft>>16, &outb[98] );
+		int16tohex( HTTPConnections[i].bytesleft, &outb[102] );
+
+		int16tohex( HTTPConnections[i].bytessofar>>16, &outb[107] );
+		int16tohex( HTTPConnections[i].bytessofar, &outb[111] );
+
+
+		int8tohex( HTTPConnections[i].is404, &outb[116] );
+		int8tohex( HTTPConnections[i].isdone, &outb[119] );
+		int8tohex( HTTPConnections[i].isfirst, &outb[122] );
+		int8tohex( HTTPConnections[i].socket, &outb[125] );
+
+		PushStr( outb );
+		PushStr( "\n" );
+		EndTCPWrite( h->socket );
+		h->state_deets++;
+		if( h->state_deets == HTTP_CONNECTIONS )
+		{
+			h->isdone = 1;
+		}
+		return;
+	}
+
 	if( h->isfirst )
 	{
 		TCPs[h->socket].sendtype = ACKBIT | PSHBIT;
 		StartTCPWrite( h->socket );
 		//TODO: Content Length?  MIME-Type?
 		PushStr( "HTTP/1.1 200 Ok\r\nConnection: close\r\n\r\n" );
-
-		if( strncmp( h->pathbuffer, "/d/r1?", 6 ) == 0 )
+		if( strncmp( h->pathbuffer, "/d/internal", 11 ) == 0 )
+		{
+			EndTCPWrite( h->socket );
+			h->isfirst = 0;
+			h->state_deets = 1;
+			return;
+		}
+		else if( strncmp( h->pathbuffer, "/d/r1?", 6 ) == 0 )
 		{
 			char outb[3] = {0, 0, 0};
 			char * bp = h->pathbuffer + 6;
@@ -255,13 +348,16 @@ restart:
 		r = enc424j600_recvpack( );
 		if( r ) continue; //may be more
 
-		HTTPTick();
 
 		if( TIFR2 & _BV(TOV2) )
 		{
 			TIFR2 |= _BV(TOV2);
 
+			HTTPTick(1);
 			TickTCP();
+		} else
+		{
+			HTTPTick(0);
 		}
 	}
 

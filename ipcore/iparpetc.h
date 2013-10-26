@@ -94,8 +94,8 @@ void TickDHCP(); //Call this DHCP_TICKS_PER_SECOND times per second.
 void GotDHCPLease();
 
 #else
-void SetupDHCPName( const char * name  ) { }
-void TickDHCP() { }
+inline void SetupDHCPName( const char * name  ) { }
+inline void TickDHCP() { }
 #endif
 
 

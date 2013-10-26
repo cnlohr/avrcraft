@@ -26,7 +26,7 @@ uint8_t  is_in_outcirc;
 void StartupBroadcast() { is_in_outcirc = 1; }
 void DoneBroadcast() { is_in_outcirc = 0; }
 void PushByte( uint8_t byte );
-void Sbyte( uint8_t b )
+void extSbyte( uint8_t b )
 {
 	if( is_in_outcirc )
 	{
