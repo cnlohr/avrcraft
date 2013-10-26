@@ -11,8 +11,14 @@ SRCS = test.c  \
 	../dumbcraft/dumbcraft.c \
 	../libs/util10.c \
 	../http/http.c \
-	../microsd/microsd.c \
-	../microsd/basicfat.c
+	../mfs/mfs.c \
+	test_fs.c
+
+mfsmaker : ../mfs/mfsmaker.c
+	gcc -o $@ $^ 
+
+test_fs.c : page mfsmaker
+	./mfsmaker page test_fs.c
 
 PROCESSOR=atmega328
 PROGRAMCODE=m328

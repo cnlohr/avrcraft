@@ -92,6 +92,7 @@
 
 //Additional applications
 #ifndef NO_HTTP
+#define HTTP_USE_MEMORY_FS
 #define INCLUDE_HTTP_SERVER
 #define HTTP_SERVER_TIMEOUT (10000) 
 #define HTTP_CONNECTIONS 6
