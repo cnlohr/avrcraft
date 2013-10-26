@@ -905,6 +905,7 @@ void GotData( uint8_t playerno )
 			}
 			chatlen++;
 			chat[i8] = 0;
+			printf( "Received: %s\n", chat );
 			break;
 
 		case 0x02: //Use Entity
@@ -1086,17 +1087,17 @@ void GotData( uint8_t playerno )
 
 			StartupBroadcast();
 
-			Sbyte( 0x03 );
-
-			Sshort( chatlen + pll + 2 + 10 + 2 );
-
-			SbufferWide( "{\"text\":\"<", 10 );
-			SbufferWide( p->playername, pll );
-			Sshort( '>' ) ;
-			Sshort( ' ' ) ;
-			SbufferWide( chat, chatlen );
-			Sshort( '"' );
-			Sshort( '}' );
+			StartSend();
+			Sbyte( 0x02 );
+			Svarint( chatlen + pll + 2 + 10 + 2 );
+			Sbuffer( "{\"text\":\"<", 10 );
+			Sbuffer( p->playername, pll );
+			Sbyte( '>' ) ;
+			Sbyte( ' ' ) ;
+			Sbuffer( chat, chatlen );
+			Sbyte( '"' );
+			Sbyte( '}' );
+			DoneSend();
 			DoneBroadcast();
 		}
 	}
