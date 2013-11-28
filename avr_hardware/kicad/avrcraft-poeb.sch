@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Mon 12 Aug 2013 06:35:09 PM EDT
+EESchema Schematic File Version 2  date Wed 27 Nov 2013 03:16:10 PM EST
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -29,15 +29,20 @@ LIBS:opto
 LIBS:atmel
 LIBS:contrib
 LIBS:valves
+LIBS:6multi
 LIBS:a4447sljtr
+LIBS:ap1117
 LIBS:atmega48_88_168_328_tqfp32
+LIBS:atmegaxu2
 LIBS:atmel_kk
+LIBS:attinyx4
 LIBS:avr6pin
 LIBS:BELFuse_Ethernet
 LIBS:bridge-MB2S-TP
 LIBS:crystal-4p
 LIBS:dmp2240udm
 LIBS:enc424j600
+LIBS:lsm303dlhc
 LIBS:ltc2471cms
 LIBS:mcp1824_ct
 LIBS:microsd_1050270001
@@ -50,7 +55,7 @@ $Descr A4 11700 8267
 encoding utf-8
 Sheet 1 1
 Title ""
-Date "12 aug 2013"
+Date "27 nov 2013"
 Rev ""
 Comp ""
 Comment1 ""
