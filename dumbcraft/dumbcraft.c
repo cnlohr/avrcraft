@@ -573,7 +573,7 @@ void UpdateServer()
 
 			StartSend();
 			Sbyte( 0x01 );  //New
-			Sint( player + PLAYER_EID_BASE );
+			Sint( player + PLAYER_LOGIN_EID_BASE );
 			Sbyte( GAMEMODE ); //creative
 			Sbyte( WORLDTYPE ); //overworld
 			Sbyte( 0 ); //peaceful
@@ -636,7 +636,7 @@ void UpdateServer()
 		if( p->need_to_login )
 		{
 			char stmp[5];
-			Uint8To16Str( stmp, player + PLAYER_EID_BASE );
+			Uint8To16Str( stmp, player + PLAYER_LOGIN_EID_BASE );
 
 			p->need_to_login = 0;
 			StartSend();
@@ -691,10 +691,6 @@ void TickServer()
 	uint8_t player;
 	dumbcraft_tick++;
 
-#ifdef DEBUG_DUMBCRAFT
-	puts( "Tick." );
-#endif
-
 #ifdef INCLUDE_ANNOUNCE_UTILS
 	if( ( dumbcraft_tick & 0xf ) == 0 )
 	{
@@ -718,8 +714,10 @@ void TickServer()
 
 		if( p->just_spawned )
 		{
+
 			p->just_spawned = 0;
 			SSpawnPlayer( player );
+
 			DoneBroadcast();
 			p->outcirctail = GetCurrentCircHead(); //If we don't, we'll see ourselves.
 			StartupBroadcast();
@@ -733,6 +731,7 @@ void TickServer()
 			int16_t diffz = p->z - p->oz;
 			if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
 			{
+				StartSend();
 				Sbyte( 0x18 );  //New
 				Sint( player + PLAYER_EID_BASE );
 				Sint( p->x );
@@ -740,14 +739,17 @@ void TickServer()
 				Sint( p->z );
 				Sbyte( p->nyaw );
 				Sbyte( p->npitch );
+				DoneSend();
 			}
 			else
 			{
+				StartSend();
 				Sbyte( 0x15 ); //New
 				Sint( player + PLAYER_EID_BASE );
 				Sbyte( diffx );
 				Sbyte( diffy );
 				Sbyte( diffz );
+				DoneSend();
 			}
 			p->ox = p->x;
 			p->oy = p->y;
@@ -757,13 +759,18 @@ void TickServer()
 
 		if( p->pitch != p->op || p->yaw != p->ow )
 		{
+			StartSend();
 			Sbyte( 0x16 ); //New
 			Sint( player + PLAYER_EID_BASE );
 			Sbyte( p->nyaw );
 			Sbyte( p->npitch );
+			DoneSend();
+
+			StartSend();
 			Sbyte( 0x19 ); //New
 			Sint( player + PLAYER_EID_BASE );
 			Sbyte( p->nyaw );
+			DoneSend();
 
 			p->op = p->pitch; p->ow = p->yaw;
 		}

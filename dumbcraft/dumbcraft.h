@@ -8,6 +8,7 @@
 #define LONG_PROTO_VERSION "1.7.4"
 
 #define PLAYER_EID_BASE 0x20
+#define PLAYER_LOGIN_EID_BASE 0x40
 #define MAX_CHATLEN 100
 
 #include "dumbconfig.h"
