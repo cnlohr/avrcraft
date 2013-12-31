@@ -26,6 +26,8 @@
 #define memcpy_P memcpy
 #endif
 
+struct Player Players[MAX_PLAYERS];
+
 //#define DEBUG_DUMBCRAFT
 
 //We don't want to pass the player ID around with us, this helps us 
@@ -354,14 +356,17 @@ void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta )
 //Spawn player (used to notify other clients about the spawnage)
 void SSpawnPlayer( uint8_t pid )
 {
+//	printf( "!!! %d\n", pid ); //XXX TODO This does not seem to be called correctly.
 	struct Player * p = &Players[pid];
 	char stmp[5];
 	Uint8To16Str( stmp, pid + PLAYER_EID_BASE );
 
 	StartSend();
 	Sbyte( 0x0c );  //new
+	Svarint( pid + PLAYER_EID_BASE );
 	Sstring( stmp, -1 );
 	Sstring( p->playername, -1 );
+
 	Sint( p->x );
 	Sint( p->y );
 	Sint( p->z );
@@ -378,7 +383,7 @@ void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed )
 	Sbyte(0x20); //NEW
 	Sint( playerno );
 	Sint( 1 );
-	Sstring( "generic.movementSpeed", strlen( "generic.movementSpeed" ) );	
+	Sstring( "generic.movementSpeed", -1 );	
 	Sdouble( speed );
 	Sshort(0);
 	DoneSend();
@@ -460,6 +465,7 @@ void UpdateServer()
 			p->need_to_reply_to_ping = 0;
 		}
 
+		//XXX TODO Player list doesn't seem to be sending.
 		if( p->need_to_send_playerlist )
 		{
 			unsigned length = sizeof( pingjson1 ) + sizeof( pingjson2 ) + sizeof( pingjson3 ) + sizeof( pingjson4 ) + 24 + strlen( MOTD_NAME );
@@ -632,8 +638,6 @@ void UpdateServer()
 			char stmp[5];
 			Uint8To16Str( stmp, player + PLAYER_EID_BASE );
 
-			printf( "Sending login.\n" );
-			printf( "%s\n", p->playername );
 			p->need_to_login = 0;
 			StartSend();
 			Sbyte( 0x02 ); //Login success
@@ -875,7 +879,9 @@ void GotData( uint8_t playerno )
 				p->handshake_state = 3;
 				break;
 			default:
+#ifdef DEBUG_DUMBCRAFT
 				printf( "Confusing packet for mode 2.\n" );
+#endif
 				break;
 			}
 		}
@@ -905,7 +911,6 @@ void GotData( uint8_t playerno )
 			}
 			chatlen++;
 			chat[i8] = 0;
-			printf( "Received: %s\n", chat );
 			break;
 
 		case 0x02: //Use Entity

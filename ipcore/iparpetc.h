@@ -24,6 +24,9 @@ extern unsigned char ipsource[4];
 extern unsigned short remoteport;
 extern unsigned short localport;
 
+extern unsigned long icmp_in;
+extern unsigned long icmp_out;
+
 //Utility out
 void SwitchToBroadcast();
 void send_etherlink_header( unsigned short type );

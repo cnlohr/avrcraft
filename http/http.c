@@ -1,6 +1,13 @@
 #include "http.h"
 #include <tcp.h>
 #include <avr_print.h>
+
+#ifndef MUTE_PRINTF
+#include <stdio.h>
+#else
+#define printf( x... )
+#endif
+
 #include <string.h>
 #include <util10.h>
 #include <avr/pgmspace.h>
@@ -94,7 +101,7 @@ void HTTPGotData( uint8_t id, uint16_t len )
 			len = 0;
 			break;
 		case TCP_WAIT_CLOSE:
-			printf( "__HTTPCLose1\n" );
+			//printf( "__HTTPCLose1\n" );
 			HTTPClose( );
 			break;
 		default:
@@ -129,7 +136,7 @@ void HTTPTick( uint8_t timed )
 		case TCP_WAIT_CLOSE:
 			if( TCPCanSend( curhttp->socket ) )
 			{
-				printf( "HTTPCLose2\n");
+				//printf( "HTTPCLose2\n");
 				HTTPClose( );
 			}
 			break;
@@ -138,7 +145,7 @@ void HTTPTick( uint8_t timed )
 			{
 				if( curhttp->timeout++ > HTTP_SERVER_TIMEOUT )
 				{
-					printf( "HTTPClose3\n" );
+					//printf( "HTTPClose3\n" );
 					HTTPClose( );
 				}
 			}
@@ -153,7 +160,7 @@ void HTTPHandleInternalCallback( )
 
 	if( curhttp->isdone )
 	{
-		printf( "HTTPClose4\n" );
+		//printf( "HTTPClose4\n" );
 		HTTPClose( );
 		return;
 	}

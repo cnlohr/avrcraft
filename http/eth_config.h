@@ -96,7 +96,8 @@
 //Scratchpad for sending out packets like UDP, ICMP, ARP, etc.
 #define TX_SCRATCHPAD_END  1024
 
-#define RX_BUFFER_SIZE   (3264)
+//#define RX_BUFFER_SIZE   (3264)
+#define RX_BUFFER_SIZE   (5264)
 #define RX_BUFFER_END    0x5FFF
 
 //Memory configuration

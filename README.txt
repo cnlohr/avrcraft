@@ -51,8 +51,14 @@ clients and forget about it, that's probably for the best.
 
 ----What the dumbcraft does (and doesn't do)----
 
-Dumbcraft is split into a C file and a static header file.  This architecture
-can (and likely will) change soon, but I wanted to get this tool out the door!
+Dumbcraft is split into a C file for the core, and a user C file that contains
+various action-related functions that you must support, i.e.:
+  * void InitDumbgame()
+  * void DoCustomPreloadStep( uint8_t playerid )
+  * void PlayerTickUpdate( int playerid )
+  * void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
+  * void PlayerUpdate( uint8_t playerid )
+  * uint8_t ClientHandleChat( char * chat, uint8_t chatlen )
 
 The .C file contains the core dumbcraft toolset.  Because it doesn't support
 any mode of communications with the outside world, all communications must be

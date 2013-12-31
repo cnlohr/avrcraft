@@ -160,17 +160,17 @@ void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 
 	if( didflip )
 	{
-		//SwitchToBroadcast();
-		//TODO XXX This should be broadcast.
+		StartupBroadcast();
 		StartSend();
-		Sbyte( 0x3d ); //effect
-		Sint( didflip + 999 );
-		Sint( x );
-		Sbyte( y );
-		Sint( z );
-		Sint( 0 );	
-		Sbyte( 0 );	
+		Sbyte( 0x29 ); //effect
+		Sstring( "random.click", -1 );
+		Sint( x<<3 );
+		Sint( y<<3 );
+		Sint( z<<3 );
+		Sfloat( 1<<FIXEDPOINT );	
+		Sbyte( 63 );	
 		DoneSend();
+		DoneBroadcast();
 	}
 
 }

@@ -270,13 +270,15 @@ void enc424j600_finish_callback_now()
 {
 	unsigned short nextpos;
 	ETCSPORT |= ETCS;
-	enc_oneshot( ESSETPKTDEC );
 	//XXX BUG: NextPacketPointer-2 may be less than in the RX area
 	if( NextPacketPointer == RX_BUFFER_START )
-		nextpos = 0x5FFE;
+		nextpos = 0x5FFE;  //XXX MAGIC NUMBER
 	else
 		nextpos = NextPacketPointer - 2;
+
 	enc424j600_write_ctrl_reg16( EERXTAILL, nextpos );
+	enc_oneshot( ESSETPKTDEC );
+
 	termcallbackearly = 1;
 }
 
@@ -294,20 +296,26 @@ unsigned short enc424j600_recvpack()
 	//if ERXTAIL == ERXHEAD this is BAD! (it thinks it's full)
 	//ERXTAIL should be 2 less than ERXHEAD
 	//Note: you don't read the two bytes immediately following ERXTAIL, they are dummy.
+//	if( enc424j600_read_ctrl_reg16( EERXHEADL ) == enc424j600_read_ctrl_reg16( EERXTAILL ) )
+//	{
+//		//I Tried this, the code in here never got called.  I thought this might be the cause of the missing packets.
+//	}
 
-/*
-	sendchr( '\n' );
-	sendhex4( enc424j600_read_ctrl_reg16( EERXHEADL ) );
-	sendchr( ':' );
-	sendhex4( enc424j600_read_ctrl_reg16( EERXTAILL ) );
-	sendchr( '\n' );
-	*/
 
 	//NextPacketPointer contains the start address of ERXST initially
-	if( !enc_read_ctrl_reg8_common( EESTATL ) )
+	uint8_t estat = enc_read_ctrl_reg8_common( EESTATL );
+	if( !estat )
 	{
 		return 0;
 	}
+
+//	Initially, I thought this may be the source of dropped incoming packets.
+//  This has nothing to do with dropped packets.
+//	Do we have much of a queue?
+//	if( estat > 5 )
+//	{
+//		sendstr( "STAT OVERRIDE\n" );
+//	}
 
 //	sendchr( '.' );
 	//Configure ERXDATA for reading.
@@ -330,6 +338,10 @@ unsigned short enc424j600_recvpack()
 
 		//Dest mac.
 		enc424j600_receivecallback( receivedbytecount );
+	} else
+	{
+		//I have never observed tis code getting called, even when I saw dropped packets.
+//		sendstr( "bad pack\n" );
 	}
 
 	if( !termcallbackearly )

@@ -43,7 +43,7 @@ unsigned char MyMAC[6];
 
 uint8_t TCPReceiveSyn( uint16_t portno )
 {
-	sendhex4( portno );
+	//sendhex4( portno );
 	if( portno == 80 )
 	{
 		uint8_t ret = GetFreeConnection();
@@ -60,7 +60,7 @@ uint8_t TCPReceiveSyn( uint16_t portno )
 void TCPConnectionClosing( uint8_t conn )
 {
 //	sendstr( "Lostconn\n" );
-	printf( "HTTPCX %d\n", conn );
+//	printf( "HTTPCX %d\n", conn );
 	curhttp = &HTTPConnections[conn];
 	HTTPClose( );
 }
@@ -138,7 +138,7 @@ void HTTPCustomCallback( )
 
 	if( h->isdone )
 	{
-		printf( "HTTPCloseY\n" );
+//		printf( "HTTPCloseY\n" );
 		HTTPClose( h->socket );
 		return;
 	}
@@ -152,61 +152,72 @@ void HTTPCustomCallback( )
 		StartTCPWrite( h->socket );
 		memset( outb, 32, 128 );
 
-		int8tohex( TCPs[i].state, &outb[0] );
-		int16tohex( TCPs[i].this_port, &outb[4] );
-		int16tohex( TCPs[i].dest_port, &outb[9] );
-		int16tohex( TCPs[i].dest_addr>>16, &outb[14] );
-		int16tohex( TCPs[i].dest_addr, &outb[18] );
+		if( h->state_deets == HTTP_CONNECTIONS )
+		{
+			int16tohex( icmp_in>>16, &outb[0] );
+			int16tohex( icmp_in, &outb[4] );
 
-		int16tohex( TCPs[i].seq_num>>16, &outb[23] );
-		int16tohex( TCPs[i].seq_num, &outb[27] );
+			int16tohex( icmp_out>>16, &outb[9] );
+			int16tohex( icmp_out, &outb[13] );
 
-		int16tohex( TCPs[i].ack_num>>16, &outb[32] );
-		int16tohex( TCPs[i].ack_num, &outb[36] );
+			h->isdone = 1;
+		}
+		else
+		{
+			int8tohex( TCPs[i].state, &outb[0] );
+			int16tohex( TCPs[i].this_port, &outb[4] );
+			int16tohex( TCPs[i].dest_port, &outb[9] );
+			int16tohex( TCPs[i].dest_addr>>16, &outb[14] );
+			int16tohex( TCPs[i].dest_addr, &outb[18] );
 
-		outb[44] = '/';
+			int16tohex( TCPs[i].seq_num>>16, &outb[23] );
+			int16tohex( TCPs[i].seq_num, &outb[27] );
 
-		int8tohex( TCPs[i].time_since_sent, &outb[45] );
-		int16tohex( TCPs[i].idletime, &outb[48] );
-		int8tohex( TCPs[i].retries, &outb[53] );
-		int8tohex( TCPs[i].sendtype, &outb[56] );
+			int16tohex( TCPs[i].ack_num>>16, &outb[32] );
+			int16tohex( TCPs[i].ack_num, &outb[36] );
 
-		outb[59] = '/';
-		int16tohex( TCPs[i].sendptr, &outb[60] );
-		int16tohex( TCPs[i].sendlength, &outb[65] );
-		outb[70] = ':';
+			outb[44] = '/';
 
-		int8tohex( HTTPConnections[i].state, &outb[71] );
-		int8tohex( HTTPConnections[i].state_deets, &outb[74] );
+			int8tohex( TCPs[i].time_since_sent, &outb[45] );
+			int16tohex( TCPs[i].idletime, &outb[48] );
+			int8tohex( TCPs[i].retries, &outb[53] );
+			int8tohex( TCPs[i].sendtype, &outb[56] );
 
-		for( j = 0; j < 10; j++ )
-			if(  HTTPConnections[i].pathbuffer[j] )
-				outb[77+j] =  HTTPConnections[i].pathbuffer[j];
+			outb[59] = '/';
+			int16tohex( TCPs[i].sendptr, &outb[60] );
+			int16tohex( TCPs[i].sendlength, &outb[65] );
+			outb[70] = ':';
 
-		outb[89] = '*';
-		int8tohex( HTTPConnections[i].is_dynamic, &outb[90] );
-		int16tohex( HTTPConnections[i].timeout, &outb[93] );
+			int8tohex( HTTPConnections[i].state, &outb[71] );
+			int8tohex( HTTPConnections[i].state_deets, &outb[74] );
 
-		int16tohex( HTTPConnections[i].bytesleft>>16, &outb[98] );
-		int16tohex( HTTPConnections[i].bytesleft, &outb[102] );
+			for( j = 0; j < 10; j++ )
+				if(  HTTPConnections[i].pathbuffer[j] )
+					outb[77+j] =  HTTPConnections[i].pathbuffer[j];
 
-		int16tohex( HTTPConnections[i].bytessofar>>16, &outb[107] );
-		int16tohex( HTTPConnections[i].bytessofar, &outb[111] );
+			outb[89] = '*';
+			int8tohex( HTTPConnections[i].is_dynamic, &outb[90] );
+			int16tohex( HTTPConnections[i].timeout, &outb[93] );
+
+			int16tohex( HTTPConnections[i].bytesleft>>16, &outb[98] );
+			int16tohex( HTTPConnections[i].bytesleft, &outb[102] );
+
+			int16tohex( HTTPConnections[i].bytessofar>>16, &outb[107] );
+			int16tohex( HTTPConnections[i].bytessofar, &outb[111] );
 
 
-		int8tohex( HTTPConnections[i].is404, &outb[116] );
-		int8tohex( HTTPConnections[i].isdone, &outb[119] );
-		int8tohex( HTTPConnections[i].isfirst, &outb[122] );
-		int8tohex( HTTPConnections[i].socket, &outb[125] );
+			int8tohex( HTTPConnections[i].is404, &outb[116] );
+			int8tohex( HTTPConnections[i].isdone, &outb[119] );
+			int8tohex( HTTPConnections[i].isfirst, &outb[122] );
+			int8tohex( HTTPConnections[i].socket, &outb[125] );
+
+			h->state_deets++;
+		}
 
 		PushStr( outb );
 		PushStr( "\n" );
 		EndTCPWrite( h->socket );
-		h->state_deets++;
-		if( h->state_deets == HTTP_CONNECTIONS )
-		{
-			h->isdone = 1;
-		}
+
 		return;
 	}
 

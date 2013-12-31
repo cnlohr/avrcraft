@@ -43,7 +43,7 @@
 //It's the same size, faster, but not thread safe. Used in conjunction with ASM_SPI
 //NOTE: This does not work on the ATMega168 for some reason, even at lower speeds?
 //NOTE: This will not work at 28 MHz 
-//#define ASM_REALLY_FAST_SPI
+#define ASM_REALLY_FAST_SPI
 
 //Minimum MTU every host must be able to handle; 
 #define MAX_FRAMELEN     578

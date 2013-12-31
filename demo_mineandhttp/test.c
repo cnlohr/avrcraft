@@ -368,11 +368,10 @@ int main( void )
 
 	//unsigned short phys[32];
 
-#ifndef NO_HTTP
+#ifndef HTTP_USE_MEMORY_FS
 	if( initSD() )
 	{
 		sendstr( "Fatal error. Cannot open SD card.\n" );
-		//return -1;
 	}
 
 	openFAT();
@@ -402,7 +401,7 @@ int main( void )
 		UpdateServer();
 
 #ifndef NO_HTTP
-			HTTPTick();
+			HTTPTick(0);
 #endif
 
 		if( TIFR2 & _BV(TOV2) )
@@ -419,6 +418,11 @@ int main( void )
 				delayctr = 0;
 				TickServer();
 			}
+
+#ifndef NO_HTTP
+			HTTPTick(1);
+#endif
+
 		}
 	}
 

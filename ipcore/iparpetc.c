@@ -11,6 +11,9 @@
 #include <string.h>
 #include <avr/pgmspace.h>
 
+unsigned long icmp_in = 0;
+unsigned long icmp_out = 0;
+
 unsigned char macfrom[6];
 unsigned char ipsource[4];
 unsigned short remoteport;
@@ -316,6 +319,8 @@ static void HandleICMP()
 
 	unsigned short payload_from_start, payload_dest_start;
 
+	icmp_in++;
+
 	type = POP;
 	POP; //code
 	POP16; //Checksum
@@ -377,6 +382,7 @@ static void HandleICMP()
 		enc424j600_alter_word( 30, ppl );
 
 		enc424j600_endsend();
+		icmp_out++;
 
 		break;
 	}
@@ -485,6 +491,7 @@ void enc424j600_receivecallback( uint16_t packetlen )
 	//Make sure it's ethernet!
 	if( POP != 0x08 )
 	{
+		sendstr( "Not ethernet.\n" );
 		return;
 	}
 
@@ -502,6 +509,7 @@ void enc424j600_receivecallback( uint16_t packetlen )
 	if( POP != 0x45 )
 	{
 //		sendstr( "CFH\n" );
+		sendstr( "Not IP.\n" );
 		return;
 	}
 
@@ -540,7 +548,10 @@ void enc424j600_receivecallback( uint16_t packetlen )
 	}
 
 	if( !is_the_packet_for_me )
+	{
+		sendstr( "not for me\n" );
 		return;
+	}
 
 	//XXX TODO Handle IPL > 5  (IHL?)
 

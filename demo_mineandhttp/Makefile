@@ -24,9 +24,9 @@ PROCESSOR=atmega328
 PROGRAMCODE=m328
 #CPUFREQ=28636363UL
 CPUFREQ=20000000UL
-COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft
-CFLAGS = -std=gnu99 -Os $(COMMON_FLAGS) -DF_CPU=$(CPUFREQ) -DNO_HTTP #-DMUTE_PRINTF #-DNO_HTTP #-Wall  
-CFLAGS:=$(CFLAGS) -flto -fwhole-program 
+COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft -I../mfs
+CFLAGS = -std=gnu99 -O1 $(COMMON_FLAGS) -DF_CPU=$(CPUFREQ) #-DNO_HTTP #-DMUTE_PRINTF #-DNO_HTTP #-Wall  
+CFLAGS:=$(CFLAGS) #-flto -fwhole-program 
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c
 EXTRA_LD_FLAGS=-Wl,--relax -Wa,-a,-ad -mcall-prologues 

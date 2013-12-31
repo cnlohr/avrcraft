@@ -5,7 +5,7 @@
 
 #define PROTO_VERSION 4
 #define PROTO_VERSION_STR "4"
-#define LONG_PROTO_VERSION "1.7.2"
+#define LONG_PROTO_VERSION "1.7.4"
 
 #define PLAYER_EID_BASE 0x20
 #define MAX_CHATLEN 100
@@ -44,7 +44,7 @@ void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed );  //before shifting is
 
 //Game section
 
-struct Player
+extern struct Player
 {
 	//Used for broadcast sending
 	uint16_t outcirctail;
