@@ -1,4 +1,4 @@
-PCBNEW-BOARD Version 2 date Sun 09 Feb 2014 01:23:15 PM EST
+PCBNEW-BOARD Version 2 date Thu 13 Feb 2014 01:05:18 AM EST
 
 # Created by Pcbnew(2013-mar-13)-testing
 
@@ -9,7 +9,7 @@ LayerCount 2
 EnabledLayers 1FFF8001
 Links 167
 NoConn 0
-Di 25.911628 19.006253 103.110211 70.84187
+Di 25.911628 19.006253 103.110211 70.53707
 Ndraw 34
 Ntrack 2549
 Nzone 0
@@ -63,7 +63,7 @@ Pad2MaskClearance 0.0862
 SolderMaskMinWidth 0
 AuxiliaryAxisOrg 0 0
 VisibleElements FFFFFF7F
-PcbPlotParams (pcbplotparams (layerselection 284196865) (usegerberextensions true) (excludeedgelayer false) (linewidth 0.150000) (plotframeref false) (viasonmask false) (mode 1) (useauxorigin false) (hpglpennumber 1) (hpglpenspeed 20) (hpglpendiameter 15) (hpglpenoverlay 0) (psnegative false) (psa4output false) (plotreference true) (plotvalue true) (plotothertext true) (plotinvisibletext false) (padsonsilk false) (subtractmaskfromsilk false) (outputformat 2) (mirror false) (drillshape 1) (scaleselection 1) (outputdirectory plots_2lps))
+PcbPlotParams (pcbplotparams (layerselection 284721153) (usegerberextensions true) (excludeedgelayer false) (linewidth 0.150000) (plotframeref false) (viasonmask false) (mode 1) (useauxorigin false) (hpglpennumber 1) (hpglpenspeed 20) (hpglpendiameter 15) (hpglpenoverlay 0) (psnegative false) (psa4output false) (plotreference true) (plotvalue true) (plotothertext true) (plotinvisibletext false) (padsonsilk false) (subtractmaskfromsilk false) (outputformat 1) (mirror false) (drillshape 0) (scaleselection 1) (outputdirectory plots_poec))
 $EndSETUP
 
 $EQUIPOT
@@ -3115,13 +3115,13 @@ Po 0 0
 $EndPAD
 $EndMODULE .1SMTPIN
 $MODULE BESOP-4
-Po 69.19976 67.29984 1800 15 528A9344 528A935C ~~
+Po 69.19976 67.29984 1800 15 52FC606B 528A935C ~~
 Li BESOP-4
 Sc 528A935C
 AR /5100592E
 Op 0 0 0
 T0 3.29946 0.09906 0.8128 0.8128 1800 0.1651 N V 21 N "D3"
-T1 0 -2.79908 0.8128 0.8128 1800 0.1651 N V 21 N "MB2S-TP"
+T1 -1.15824 -0.01016 0.8128 0.8128 1800 0.1651 N V 21 N "MB2S-TP"
 DS 1.55956 1.81102 1.55956 1.17602 0.381 21
 DS 1.55956 1.17602 2.19456 1.17602 0.381 21
 DS -1.74244 1.81102 -1.74244 -1.74498 0.381 21
