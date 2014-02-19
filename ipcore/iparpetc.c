@@ -123,6 +123,7 @@ void HandleDHCP( uint16_t len )
 			if( length < 4 || !is_ack_packet ) break;
 			first4 = POP16;
 			second4 = POP16;
+//			printf( "LEASE TIME: %d %d\n", first4, second4 );
 			if( first4 )
 			{
 				dhcp_seconds_remain = 0xffff;
@@ -176,7 +177,6 @@ void TickDHCP()
 	}
 
 	dhcp_ticks_in_sec = 0;
-
 
 	if( dhcp_seconds_remain == 0 )
 	{
@@ -246,6 +246,8 @@ void RequestNewIP( uint8_t mode, uint8_t * negotiating_ip, uint8_t * dhcp_server
 		enc424j600_pushblob( negotiating_ip, 4 );
 	}
 
+printf( "TICK DHC %p\n", dhcp_server );
+
 	if( dhcp_server ) //request
 	{
 		enc424j600_push16( 0x3604 );
@@ -262,7 +264,7 @@ void RequestNewIP( uint8_t mode, uint8_t * negotiating_ip, uint8_t * dhcp_server
 
 	enc424j600_push16( 0x3702 ); //Parameter request list
 	enc424j600_push16( 0x0103 ); //subnet mask, router
-	enc424j600_push16( 0x2a06 ); //NTP server, DNS server  (We don't use either NTP or DNS)
+//	enc424j600_push16( 0x2a06 ); //NTP server, DNS server  (We don't use either NTP or DNS)
 	enc424j600_push8( 0xff ); //End option
 
 	enc424j600_pushzeroes( 32 ); //Padding
@@ -278,7 +280,7 @@ void send_etherlink_header( unsigned short type )
 	PUSHB( macfrom, 6 );
 
 // The mac does this for us.
-//	PUSHB( MyMAC, 6 );
+	PUSHB( MyMAC, 6 );
 
 	PUSH16( type );
 }
@@ -374,12 +376,12 @@ static void HandleICMP()
 		enc424j600_finish_callback_now();
 
 		//Calculate header and ICMP checksums
-		enc424j600_start_checksum( 8, 20 );
+		enc424j600_start_checksum( 8+6, 20 );
 		unsigned short ppl = enc424j600_get_checksum();
-		enc424j600_start_checksum( 28, payloadsize + 8 );
-		enc424j600_alter_word( 18, ppl );
+		enc424j600_start_checksum( 28+6, payloadsize + 8 );
+		enc424j600_alter_word( 18+6, ppl );
 		ppl = enc424j600_get_checksum();
-		enc424j600_alter_word( 30, ppl );
+		enc424j600_alter_word( 30+6, ppl );
 
 		enc424j600_endsend();
 		icmp_out++;
@@ -598,27 +600,27 @@ void util_finish_udp_packet( )// unsigned short length )
 	//Packet loaded.
 	enc424j600_stopop();
 
-	unsigned short length = enc424j600_get_write_length();
+	unsigned short length = enc424j600_get_write_length() - 6; //6 = my mac
 
 	//Write length in packet
-	enc424j600_alter_word( 10, length-14 ); //Experimentally determined 14, 0 was used for a long time.
-	enc424j600_start_checksum( 8, 20 );
-	enc424j600_alter_word( 32, length-34 );
+	enc424j600_alter_word( 10+6, length-14 ); //Experimentally determined 14, 0 was used for a long time.
+	enc424j600_start_checksum( 8+6, 20 );
+	enc424j600_alter_word( 32+6, length-34 );
 
 	ppl = enc424j600_get_checksum();
-	enc424j600_alter_word( 18, ppl );
+	enc424j600_alter_word( 18+6, ppl );
 
 	//Addenudm for UDP checksum
 
-	enc424j600_alter_word( 34, 0x11 + 0x8 + length-42 ); //UDP number + size + length (of packet)
+	enc424j600_alter_word( 34+6, 0x11 + 0x8 + length-42 ); //UDP number + size + length (of packet)
 		//XXX I THINK 
 
-	enc424j600_start_checksum( 20, length - 42 + 16 ); //sta
+	enc424j600_start_checksum( 20+6, length - 42 + 16 ); //sta
 
 	ppl2 = enc424j600_get_checksum();
 	if( ppl2 == 0 ) ppl2 = 0xffff;
 
-	enc424j600_alter_word( 34, ppl2 );
+	enc424j600_alter_word( 34+6, ppl2 );
 
 	enc424j600_endsend();
 }

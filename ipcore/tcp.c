@@ -70,6 +70,8 @@ static void write_tcp_header( uint8_t c )
 //We cannot send etherlink header otherwise we may misdirect our packets.
 //	send_etherlink_header( 0x0800 );
 	PUSHB( t->remote_mac, 6 );
+	PUSHB( MyMAC, 6 );
+
 	PUSH16( 0x0800 );
 
 	send_ip_header( 0x00, (const uint8_t *)&t->dest_addr, TCP_PROTOCOL_NUMBER ); //Size, etc. will be filled into IP header later.
@@ -429,7 +431,7 @@ void EndTCPWrite( uint8_t c )
 
 	enc424j600_stopop();
 
-	length = enc424j600_get_write_length();
+	length = enc424j600_get_write_length() - 6;
 	t->sendlength = length;
 
 //	payloadlen = length - 34 - 20;
@@ -441,19 +443,19 @@ void EndTCPWrite( uint8_t c )
 	}
 
 	//Write length in IP header
-	enc424j600_alter_word( 10, length - 14 );
-	enc424j600_start_checksum( 8, 20 );
+	enc424j600_alter_word( 10+6, length - 14 );
+	enc424j600_start_checksum( 8+6, 20 );
 	ppl = enc424j600_get_checksum();
-	enc424j600_alter_word( 18, ppl );
+	enc424j600_alter_word( 18+6, ppl );
 
 	//Calc TCP checksum
 
 	//Initially, write pseudo-header into the checksum area
-	enc424j600_alter_word( 0x2C, TCP_PROTOCOL_NUMBER + length - 28 - 6 );
+	enc424j600_alter_word( 0x2C+6, TCP_PROTOCOL_NUMBER + length - 28 - 6 );
 
-	enc424j600_start_checksum( 20, length - 26 );
+	enc424j600_start_checksum( 20+6, length - 26 );
 	ppl2 = enc424j600_get_checksum();
-	enc424j600_alter_word( 0x2C, ppl2 );
+	enc424j600_alter_word( 0x2C+6, ppl2 );
 
 	enc424j600_endsend( );
 }
