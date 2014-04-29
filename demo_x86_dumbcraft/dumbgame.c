@@ -124,7 +124,7 @@ void PlayerTickUpdate( int playerid )
 
 void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 {
-	struct Player * p = &Players[playerid];
+//	struct Player * p = &Players[playerid];
 
 	uint8_t didflip = 1;
 

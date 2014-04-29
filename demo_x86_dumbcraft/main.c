@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <poll.h>
 #include <string.h>
 #include <unistd.h>
@@ -98,7 +99,6 @@ void PushByte( uint8_t byte )
 
 void EndSend( )
 {
-	uint16_t ptr;
 	if( sendptr != 0 )
 		SendData( sendplayer, sendbuffer, sendptr );
 	//printf( "\n" );
@@ -140,7 +140,7 @@ int main()
 	int serversocket;
 	struct sockaddr_in servaddr;
 	struct pollfd fds[1];
-	double lastticktime = 0;
+	int lastticktime = 0;
 
 	lin.l_onoff=1;
 	lin.l_linger=0;
@@ -178,7 +178,9 @@ int main()
 	while(1)
 	{
 		int rc;
-		double thistime = OGGetAbsoluteTime();
+//		double thistime = OGGetAbsoluteTime();
+		struct timeval tv;
+		gettimeofday( &tv, 0 );
 
 		memset( fds, 0, sizeof( fds ) );
 		fds[0].fd = serversocket;
@@ -256,13 +258,13 @@ int main()
 
 		UpdateServer();
 
-		if( thistime > lastticktime+0.1 )
+		if( ( ( tv.tv_usec - lastticktime + 1000000 ) % 1000000 ) > 100000 )
 		{
 			TickServer();
-			lastticktime = thistime;
+			lastticktime = tv.tv_usec;
 		}
 
-		usleep( 20000 );
+		usleep( 10000 );
 	}
 	return 0;
 }
