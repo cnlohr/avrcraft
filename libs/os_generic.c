@@ -88,6 +88,7 @@ void OGDeleteMutex( og_mutex_t om )
 #include <stdlib.h>
 #include <pthread.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 pthread_mutex_t g_RawMutexStart = PTHREAD_MUTEX_INITIALIZER;
 
