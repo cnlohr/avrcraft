@@ -3,9 +3,9 @@
 #ifndef _DUMBCRAFT_H
 #define _DUMBCRAFT_H
 
-#define PROTO_VERSION 4
-#define PROTO_VERSION_STR "4"
-#define LONG_PROTO_VERSION "1.7.4"
+#define PROTO_VERSION 5
+#define PROTO_VERSION_STR "5"
+#define LONG_PROTO_VERSION "1.7.9"
 
 #define PLAYER_EID_BASE 0x20
 #define PLAYER_LOGIN_EID_BASE 0x40
@@ -102,7 +102,7 @@ int16_t Rdouble();
 int16_t Rfloat();
 void Sint( uint32_t o );
 void Sshort( uint16_t o );
-void Sstring( const unsigned char * str, uint8_t len );
+void Sstring( const char * str, uint8_t len );
 void Sbuffer( const uint8_t * buf, uint8_t len );
 void SbufferWide( const uint8_t * buf, uint8_t len );
 void SbufferPGM( const uint8_t * buf, uint8_t len );

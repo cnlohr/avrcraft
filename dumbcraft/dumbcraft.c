@@ -105,6 +105,7 @@ uint8_t dcrbyte()
 		cmdremain--;
 		return Rbyte();
 	}
+	return 0;
 }
 
 static uint8_t localsendbuffer[SENDBUFFERSIZE];
@@ -189,14 +190,15 @@ uint16_t Rvarint()
 
 uint16_t Rslot()
 {
-	uint16_t ret = Rshort();
-	uint8_t  count = dcrbyte();
-	uint16_t damage = Rshort();
+/*	uint16_t ret = */Rshort();
+/*	uint8_t  count = */dcrbyte();
+/*	uint16_t damage = */Rshort();
 	uint16_t nbt = Rshort();
 	if( nbt != 0xffff )
 	{
 		Rdump( nbt );
 	}
+	return nbt;
 }
 
 void Rstring( char * data, int16_t maxlen )
@@ -262,9 +264,9 @@ void Sshort( uint16_t o )
 }
 
 //Send a string, -1 for length automatically sends a null-terminated string.
-void Sstring( const unsigned char * str, uint8_t len )
+void Sstring( const char * str, uint8_t len )
 {
-	if( len == 255 ) len = strlen( str );
+	if( len == 255 ) len = strlen( (const char*)str );
 	uint8_t i;
 	Svarint( len );
 	for( i = 0; i < len; i++ )
@@ -365,7 +367,7 @@ void SSpawnPlayer( uint8_t pid )
 	Sbyte( 0x0c );  //new
 	Svarint( pid + PLAYER_EID_BASE );
 	Sstring( stmp, -1 );
-	Sstring( p->playername, -1 );
+	Sstring( (const char*)p->playername, -1 );
 
 	Sint( p->x );
 	Sint( p->y );
@@ -443,7 +445,6 @@ void InitDumbcraft()
 void UpdateServer()
 {
 	uint8_t player, i;
-	uint16_t i16;
 	uint8_t localplayercount = 0;
 	for( player = 0; player < MAX_PLAYERS; player++ )
 	{
@@ -615,7 +616,6 @@ void UpdateServer()
 			}
 			else
 			{
-				uint16_t i;
 				p->next_chunk_to_load++;
 
 				StartSend();
@@ -635,14 +635,20 @@ void UpdateServer()
 		//This is triggered when players want to actually join.
 		if( p->need_to_login )
 		{
-			char stmp[5];
+			char stmp[38];
 			Uint8To16Str( stmp, player + PLAYER_LOGIN_EID_BASE );
-
+			for( i = 2; i < 36; i++ )
+				stmp[i] = '0';
+			stmp[36] = 0;
+			stmp[8] = '-';
+			stmp[13] = '-';
+			stmp[18] = '-';
+			stmp[23] = '-';
 			p->need_to_login = 0;
 			StartSend();
 			Sbyte( 0x02 ); //Login success
-			Sstring( stmp, -1 );
-			Sstring( p->playername, -1 );
+			Sstring( stmp, -1 );  //UUID (Yuck) 00000000-0000-0000-0000-000000000000
+			Sstring( (const char*)p->playername, -1 );
 
 
 			DoneSend();
@@ -727,7 +733,6 @@ void TickServer()
 		{
 			int16_t diffx = p->x - p->ox;
 			int16_t diffy = p->y - p->oy;
-			int16_t diffs = p->stance - p->os;
 			int16_t diffz = p->z - p->oz;
 			if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
 			{
@@ -823,6 +828,7 @@ void GotData( uint8_t playerno )
 	thisplayer = playerno;
 	uint8_t * chat = 0;
 	uint8_t chatlen = 0;
+//	uint8_t skip_cmd = 0;
 
 	//This is where we read in a packet from a client.
 	//You can send to the broadcast cicular buffer, but you
@@ -853,7 +859,7 @@ void GotData( uint8_t playerno )
 				Rshort(); //port
 				p->handshake_state = Rvarint();
 #ifdef DEBUG_DUMBCRAFT
-				printf(" Client switched mode to: %d\n", p->handshake_state );
+				printf("Client switched mode to: %d\n", p->handshake_state );
 #endif
 			}
 		}
@@ -880,10 +886,14 @@ void GotData( uint8_t playerno )
 			switch( cmd )
 			{
 			case 0x00:
-				Rstring( p->playername, MAX_PLAYER_NAME-1 );
+				Rstring( (char*)p->playername, MAX_PLAYER_NAME-1 );
 				p->playername[MAX_PLAYER_NAME-1] = 0;
 				p->need_to_login = 1;
 				p->handshake_state = 3;
+#ifdef DEBUG_DUMBCRAFT
+				printf( "Player Login, switching handshake_state.\n" );
+#endif
+
 				break;
 			default:
 #ifdef DEBUG_DUMBCRAFT
@@ -892,6 +902,7 @@ void GotData( uint8_t playerno )
 				break;
 			}
 		}
+
 		switch( cmd )
 		{
 
@@ -1092,9 +1103,9 @@ void GotData( uint8_t playerno )
 
 	if( chatlen )
 	{
-		uint8_t pll = strlen( p->playername );
+		uint8_t pll = strlen( (char*)p->playername );
 
-		if( ClientHandleChat( chat, chatlen ) )
+		if( ClientHandleChat( (char*)chat, chatlen ) )
 		{
 
 			StartupBroadcast();
@@ -1102,7 +1113,7 @@ void GotData( uint8_t playerno )
 			StartSend();
 			Sbyte( 0x02 );
 			Svarint( chatlen + pll + 2 + 10 + 2 );
-			Sbuffer( "{\"text\":\"<", 10 );
+			Sbuffer( (const uint8_t*)"{\"text\":\"<", 10 );
 			Sbuffer( p->playername, pll );
 			Sbyte( '>' ) ;
 			Sbyte( ' ' ) ;
