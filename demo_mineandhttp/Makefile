@@ -9,6 +9,7 @@ SRCS = test.c  \
 	../ipcore/enc424j600_asm.S \
 	../ipcore/tcp.c \
 	../dumbcraft/dumbcraft.c \
+	../dumbcraft/dumbutils.c \
 	../libs/util10.c \
 	../http/http.c \
 	../mfs/mfs.c \
@@ -25,7 +26,7 @@ PROGRAMCODE=m328
 #CPUFREQ=28636363UL
 CPUFREQ=20000000UL
 COMMON_FLAGS= -mmcu=$(PROCESSOR) -I. -I.. -I../http -I../microsd -I../libs -I../ipcore -I../dumbcraft -I../mfs
-CFLAGS = -std=gnu99 -O1 $(COMMON_FLAGS) -DF_CPU=$(CPUFREQ) #-DNO_HTTP -DMUTE_PRINTF #-DNO_HTTP #-Wall  
+CFLAGS = -std=gnu99 -O1 $(COMMON_FLAGS) -DF_CPU=$(CPUFREQ) -DNO_HTTP -DMUTE_PRINTF #-DNO_HTTP #-DNO_HTTP #-Wall  
 CFLAGS:=$(CFLAGS) -flto -fwhole-program  #NOTE: For figuring out more details from binaries, ditch this line.
 AS = avr-gcc
 ASFLAGS = $(COMMON_FLAGS) -c

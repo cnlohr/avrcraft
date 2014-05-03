@@ -246,8 +246,6 @@ void RequestNewIP( uint8_t mode, uint8_t * negotiating_ip, uint8_t * dhcp_server
 		enc424j600_pushblob( negotiating_ip, 4 );
 	}
 
-printf( "TICK DHC %p\n", dhcp_server );
-
 	if( dhcp_server ) //request
 	{
 		enc424j600_push16( 0x3604 );

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <basicfat.h>
 #include <avr/eeprom.h> 
+#include <util10.h>
 
 /*
 Useful ports:
@@ -329,10 +330,22 @@ unsigned char MyMAC[6];
 
 void GotDHCPLease()
 {
-	puts( "New Lease." );
-	printf( "IP: %d.%d.%d.%d\n", MyIP[0], MyIP[1], MyIP[2], MyIP[3] );
-	printf( "MS: %d.%d.%d.%d\n", MyMask[0], MyMask[1], MyMask[2], MyMask[3] );
-	printf( "GW: %d.%d.%d.%d\n", MyGateway[0], MyGateway[1], MyGateway[2], MyGateway[3] );
+	int i;
+	char st[5];
+
+//	puts( "New Lease." );
+//	printf( "IP: %d.%d.%d.%d\n", MyIP[0], MyIP[1], MyIP[2], MyIP[3] );
+//	printf( "MS: %d.%d.%d.%d\n", MyMask[0], MyMask[1], MyMask[2], MyMask[3] );
+//	printf( "GW: %d.%d.%d.%d\n", MyGateway[0], MyGateway[1], MyGateway[2], MyGateway[3] );
+	sendstr( "Got DHCP Lease" );
+	for( i = 0; i < 4; i++ )
+	{
+		Uint8To10Str( st, MyIP[i] );
+		sendstr( st );
+		sendchr( '.' );
+	}
+	sendchr( '\n' );
+	
 }
 
 int main( void )

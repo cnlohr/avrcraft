@@ -27,4 +27,11 @@ extern char my_server_name[];
 #define MINECRAFT_PORT 25565
 #define MINECRAFT_PORT_STRING "25565"
 
+//Optional functionality
+
+#define NEED_PLAYER_CLICK
+//#define NEED_PLAYER_BLOCK_ACTION
+//#define NEED_SLOT_CHANGE
+//#define NEED_PLAYER_CLICK
+
 #endif

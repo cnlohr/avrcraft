@@ -27,11 +27,9 @@
 #endif
 
 struct Player Players[MAX_PLAYERS];
+uint8_t playerid;
 
 //#define DEBUG_DUMBCRAFT
-
-//We don't want to pass the player ID around with us, this helps us 
-uint8_t    thisplayer;
 
 //Tick # (could be used for time of day? Or doing work every nth tick?)
 //You could reset it every 24,000 ticks to make the day/night cycle right.
@@ -275,6 +273,17 @@ void Sstring( const char * str, uint8_t len )
 	}
 }
 
+void SstringPGM( const char * str )
+{
+	uint8_t len = strlen_P( (const char*)str );
+	uint8_t i;
+	Svarint( len );
+	for( i = 0; i < len; i++ )
+	{	
+		Sbyte( pgm_read_byte( &str[i] ) );
+	}
+}
+
 //Send a buffer (NOTE: this cannot be used with a string as the byte-sizes are two-wide)
 void Sbuffer( const uint8_t * buf, uint8_t len )
 {
@@ -321,40 +330,6 @@ void Sfloat( int16_t i )
 
 //////////////////////////////////////////GAME UTILITIES///////////////////////
 
-//Update a sign at a specific location with a string and a numerical value.
-void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val )
-{
-	char stmp[5];
-
-
-	StartSend();
-	Sbyte( 0x33 ); //sign update (new)
-	Sint( x );
-	Sshort( y );
-	Sint( z );
-	Sstring( st, -1 );
-	Uint8To10Str( stmp, val );
-	Sstring( stmp, 3 );
-	stmp[0] = '0'; stmp[1] = 'x';
-	Uint8To16Str( stmp+2, val );
-	Sstring( stmp, -1 );
-	Sstring( stmp, 0 );
-	DoneSend();
-}
-
-//Update a block at a given x, y, z (good for 0..255 in each dimension)
-void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta )
-{
-	StartSend();
-	Sbyte(0x23);  //NEW
-	Sint( x ); //x
-	Sbyte( y ); //y
-	Sint( z ); //z
-	Svarint( bt ); //block type
-	Sbyte( meta ); //metadata
-	DoneSend();
-}
-
 //Spawn player (used to notify other clients about the spawnage)
 void SSpawnPlayer( uint8_t pid )
 {
@@ -379,13 +354,14 @@ void SSpawnPlayer( uint8_t pid )
 	DoneSend();
 }
 
-void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed )
+void UpdatePlayerSpeed( uint8_t speed )
 {
 	StartSend();
 	Sbyte(0x20); //NEW
-	Sint( playerno );
+	Sint( playerid );
 	Sint( 1 );
 	Sstring( "generic.movementSpeed", -1 );	
+	//SstringPGM( PSTR("generic.movementSpeed") );
 	Sdouble( speed );
 	Sshort(0);
 	DoneSend();
@@ -444,18 +420,18 @@ void InitDumbcraft()
 
 void UpdateServer()
 {
-	uint8_t player, i;
+	uint8_t i;
 	uint8_t localplayercount = 0;
-	for( player = 0; player < MAX_PLAYERS; player++ )
+	for( playerid = 0; playerid < MAX_PLAYERS; playerid++ )
 	{
-		struct Player * p = &Players[player];
+		struct Player * p = &Players[playerid];
 
 		if( p->active ) localplayercount++;
 
-		if( !p->active || !CanSend( player ) ) continue;
+		if( !p->active || !CanSend( playerid ) ) continue;
 
 		p->update_number++;
-		SendStart( player );
+		SendStart( playerid );
 
 		if( p->need_to_reply_to_ping )
 		{
@@ -500,7 +476,7 @@ void UpdateServer()
 			else
 			{
 				//From the game portion
-				PlayerUpdate( player );
+				PlayerUpdate();
 			}
 		}
 
@@ -574,7 +550,7 @@ void UpdateServer()
 
 			StartSend();
 			Sbyte( 0x01 );  //New
-			Sint( player + PLAYER_LOGIN_EID_BASE );
+			Sint( (uint8_t)(playerid + PLAYER_LOGIN_EID_BASE) );
 			Sbyte( GAMEMODE ); //creative
 			Sbyte( WORLDTYPE ); //overworld
 			Sbyte( 0 ); //peaceful
@@ -591,14 +567,14 @@ void UpdateServer()
 			//Show us the rest of the players
 			for( i = 0; i < MAX_PLAYERS; i++ )
 			{
-				if( i != player && Players[i].active )
+				if( i != playerid && Players[i].active )
 					SSpawnPlayer( i );
 			}
 
 		}
 		if( p->custom_preload_step )
 		{
-			DoCustomPreloadStep( player );
+			DoCustomPreloadStep( );
 
 			//This is when we checkin to the updates. (after we've sent the map chunk updates)
 //			p->outcirctail = outcirchead;
@@ -617,11 +593,10 @@ void UpdateServer()
 			else
 			{
 				p->next_chunk_to_load++;
-
 				StartSend();
 				Sbyte( 0x21 );
-				Sint( ichk/MAPSIZECHUNKS );
-				Sint( ichk%MAPSIZECHUNKS );
+				Sint( (uint8_t)(ichk/MAPSIZECHUNKS) );
+				Sint( (uint8_t)(ichk%MAPSIZECHUNKS) );
 				Sbyte( 1 ); //Continuous ground-up
 				Sshort( 0x08 ); //bit-map
 				Sshort( 0x08 ); //bit-map
@@ -636,8 +611,8 @@ void UpdateServer()
 		if( p->need_to_login )
 		{
 			char stmp[38];
-			Uint8To16Str( stmp, player + PLAYER_LOGIN_EID_BASE );
-			for( i = 2; i < 36; i++ )
+			Uint8To16Str( stmp, playerid + PLAYER_LOGIN_EID_BASE );
+			for( i = strlen( stmp ); i < 36; i++ )
 				stmp[i] = '0';
 			stmp[36] = 0;
 			stmp[8] = '-';
@@ -648,6 +623,7 @@ void UpdateServer()
 			StartSend();
 			Sbyte( 0x02 ); //Login success
 			Sstring( stmp, -1 );  //UUID (Yuck) 00000000-0000-0000-0000-000000000000
+//			printf( "Logging in UUID: %s\n", stmp );
 			Sstring( (const char*)p->playername, -1 );
 
 
@@ -674,7 +650,7 @@ void UpdateServer()
 
 		if( p->has_logged_on && !p->doneupdatespeed )
 		{
-			UpdatePlayerSpeed( player, p->running?RUNSPEED:WALKSPEED );
+			UpdatePlayerSpeed( p->running?RUNSPEED:WALKSPEED );
 			p->doneupdatespeed = 1;
 		}
 
@@ -694,7 +670,6 @@ now_sending_broadcast:
 //This function should only be called ~10x/second
 void TickServer()
 {
-	uint8_t player;
 	dumbcraft_tick++;
 
 #ifdef INCLUDE_ANNOUNCE_UTILS
@@ -707,9 +682,11 @@ void TickServer()
 	//Everything in here should be broadcast to all players.
 	StartupBroadcast();
 
-	for( player = 0; player < MAX_PLAYERS; player++ )
+	GameTick();
+
+	for( playerid = 0; playerid < MAX_PLAYERS; playerid++ )
 	{
-		struct Player * p = &Players[player];
+		struct Player * p = &Players[playerid];
 		if( !p->active ) continue;
 
 		//Send a keep-alive every so often
@@ -722,7 +699,7 @@ void TickServer()
 		{
 
 			p->just_spawned = 0;
-			SSpawnPlayer( player );
+			SSpawnPlayer( playerid );
 
 			DoneBroadcast();
 			p->outcirctail = GetCurrentCircHead(); //If we don't, we'll see ourselves.
@@ -738,7 +715,7 @@ void TickServer()
 			{
 				StartSend();
 				Sbyte( 0x18 );  //New
-				Sint( player + PLAYER_EID_BASE );
+				Sint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 				Sint( p->x );
 				Sint( p->y );
 				Sint( p->z );
@@ -750,7 +727,7 @@ void TickServer()
 			{
 				StartSend();
 				Sbyte( 0x15 ); //New
-				Sint( player + PLAYER_EID_BASE );
+				Sint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 				Sbyte( diffx );
 				Sbyte( diffy );
 				Sbyte( diffz );
@@ -766,14 +743,14 @@ void TickServer()
 		{
 			StartSend();
 			Sbyte( 0x16 ); //New
-			Sint( player + PLAYER_EID_BASE );
+			Sint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			Sbyte( p->npitch );
 			DoneSend();
 
 			StartSend();
 			Sbyte( 0x19 ); //New
-			Sint( player + PLAYER_EID_BASE );
+			Sint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
 
@@ -782,7 +759,7 @@ void TickServer()
 
 		p->tick_since_update = 1;
 
-		PlayerTickUpdate( player );
+		PlayerTickUpdate( );
 	}
 
 	DoneBroadcast();
@@ -798,7 +775,7 @@ void AddPlayer( uint8_t playerno )
 
 void RemovePlayer( uint8_t playerno )
 {
-//	printf( "Remove: %d\n", playerno );
+//	printf( "Remove: %d\n", playerid );
 	Players[playerno].active = 0;
 	//todo send 0xff command
 }
@@ -824,8 +801,8 @@ void GotData( uint8_t playerno )
 #endif
 	uint8_t i8;
 	uint16_t i16;
-	struct Player * p = &Players[playerno];
-	thisplayer = playerno;
+	playerid = playerno;
+	struct Player * p = &Players[playerid];
 	uint8_t * chat = 0;
 	uint8_t chatlen = 0;
 //	uint8_t skip_cmd = 0;
@@ -853,7 +830,7 @@ void GotData( uint8_t playerno )
 #ifdef DEBUG_DUMBCRAFT
 					printf("wrong version; got: %d; expected %d\n", i16, PROTO_VERSION );
 #endif
-					ForcePlayerClose( playerno, 'v' );				
+					ForcePlayerClose( playerid, 'v' );				
 				}
 				Rstring( 0, 0 ); //server
 				Rshort(); //port
@@ -960,33 +937,42 @@ void GotData( uint8_t playerno )
 			p->npitch = p->pitch/45;//XXX TODO PROBABLY SLOW
 			p->onground = dcrbyte();
 			break;
-
+#ifdef NEED_PLAYER_BLOCK_ACTION
 		case 0x07: //player digging.
-			dcrbyte(); //action player is taking against block
-			Rint(); //block pos X
-			dcrbyte(); //block pos Y
-			Rint(); //block pos Z
-			dcrbyte(); //which face?
+		{
+			uint8_t status = dcrbyte(); //action player is taking against block
+			uint8_t x = Rint(); //block pos X
+			uint8_t y = dcrbyte(); //block pos Y
+			uint8_t z = Rint(); //block pos Z
+			uint8_t face = dcrbyte(); //which face?
+			
+			PlayerBlockAction( status, x, y, z, face );
 			break;
-
+		}
+#endif
+#ifdef NEED_PLAYER_CLICK
 		case 0x08:	//Block placement / right-click, used for levers.
 		{
 			uint8_t x = Rint();
 			uint8_t y = dcrbyte();
 			uint8_t z = Rint();
+			uint8_t dir = dcrbyte();
+			/*uint8_t sl = */Rslot();
 			dcrbyte();
-			Rslot();
 			dcrbyte();
 			dcrbyte();
-			dcrbyte();
-
-			PlayerClick( playerno, x, y, z );
+			PlayerClick( x, y, z, dir );
 			break;
 		}
+#endif
+#ifdef NEED_SLOT_CHANGE
 		case 0x09:  //Held item change
-			Rslot();
+			PlayerChangeSlot( Rshort() );
 			break;
+#endif
 
+//XXX: BETWEEN HERE AND BELOW MAY NOT BE NEEDED FOR SMALL SYSTEMS
+/*
 
 		case 0x0a: //animation
 			Rint(); //pid
@@ -999,8 +985,6 @@ void GotData( uint8_t playerno )
 			Rint(); //jump boost
 			break;
 
-//XXX: BETWEEN HERE AND BELOW MAY NOT BE NEEDED FOR SMALL SYSTEMS
-/*
 		case 0x0c: //Steer vehicle
 			Rfloat(); //sideways
 			Rfloat(); //forward
@@ -1107,9 +1091,7 @@ void GotData( uint8_t playerno )
 
 		if( ClientHandleChat( (char*)chat, chatlen ) )
 		{
-
-			StartupBroadcast();
-
+			StartupBroadcast();			
 			StartSend();
 			Sbyte( 0x02 );
 			Svarint( chatlen + pll + 2 + 10 + 2 );
@@ -1125,8 +1107,4 @@ void GotData( uint8_t playerno )
 		}
 	}
 }
-
-//From dumbcraft to user (you accept)
-//void SendData( uint8_t playerno, unsigned char * data, uint16_t packetsize );
-//void ForcePlayerClose( uint8_t playerno ); //you still must call removeplayer, this is just a notification.
 

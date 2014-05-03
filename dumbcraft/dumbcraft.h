@@ -41,7 +41,9 @@ uint8_t UnloadCircularBufferOnThisClient( uint16_t * whence ); //Push to the cur
 uint16_t GetCurrentCircHead();
 void StartupBroadcast(); //Set up broadcast output.
 void DoneBroadcast(); //Done with broadcast mode.
-void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed );  //before shifting is done by FIXEDPOINT
+void UpdatePlayerSpeed( uint8_t speed );  //before shifting is done by FIXEDPOINT
+void PlayerChangeSlot( uint8_t slotno );
+void PlayerBlockAction( uint8_t status, uint8_t x, uint8_t y, uint8_t z, uint8_t face );
 
 //Game section
 
@@ -89,12 +91,14 @@ extern struct Player
 
 extern uint16_t dumbcraft_tick;
 extern uint8_t dumbcraft_playercount;
+extern uint8_t playerid;
 
 //Tools for the user:
 void Rbuffer( uint8_t * buffer, uint8_t size );
 void StartSend(); //For single packet.
 void DoneSend(); //For single packet
 void Sbyte( uint8_t b );
+void Svarint( uint16_t v );
 uint32_t Rint();
 uint16_t Rshort();
 void Rstring( char * data, int16_t maxlen );
@@ -106,19 +110,21 @@ void Sstring( const char * str, uint8_t len );
 void Sbuffer( const uint8_t * buf, uint8_t len );
 void SbufferWide( const uint8_t * buf, uint8_t len );
 void SbufferPGM( const uint8_t * buf, uint8_t len );
+void SstringPGM( const char * str );
 void Sdouble( int16_t i );
 void Sfloat( int16_t i );
 void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
 void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta );
 void SSpawnPlayer( uint8_t pid );
-void UpdatePlayerSpeed( uint8_t playerno, uint8_t speed );
+void UpdatePlayerSpeed( uint8_t speed );
 
 //You must write the following:
 uint8_t ClientHandleChat( char * chat, uint8_t chatlen ); 
-void PlayerUpdate( uint8_t playerid );
-void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z );
-void PlayerTickUpdate( int playerid );
-void DoCustomPreloadStep( uint8_t playerid );
+void PlayerUpdate( );
+void GameTick();
+void PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir );
+void PlayerTickUpdate(  );
+void DoCustomPreloadStep(  );
 void InitDumbgame();
 
 
