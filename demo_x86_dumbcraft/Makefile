@@ -11,7 +11,7 @@ COMMONFLAGS:= -Os -m32 -flto -g
 CFLAGS:=-Wall -I. -I../dumbcraft -I../libs  $(COMMONFLAGS) #-DDEBUG_DUMBCRAFT
 LDFLAGS:=-fwhole-program $(COMMONFLAGS)  -Wl,-Map,prog.map -s
 
-dumbcraft : main.o ../dumbcraft/dumbcraft.o ../libs/util10.o dumbgame.o
+dumbcraft : main.o ../dumbcraft/dumbcraft.o ../libs/util10.o dumbgame.o ../dumbcraft/dumbutils.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 

@@ -1,12 +1,6 @@
 //Copyright 2012 <>< Charles Lohr, under the MIT-x11 or NewBSD license.  You choose.
 
-#ifndef _DUMBGAME_H
-#define _DUMBGAME_H
-
-//NOTE: I am in the middle of an architecture change!  the statics will be leaving and this can be its own object file.  :( ttyl 500 bytes
-//This file is meant to be included into dumbcraft.c
 //Your game code goes here.
-
 //This file is complete sphagetti code, you'll probably want to gut it for your project.
 
 //The following functions are exposed to you for use:
@@ -36,20 +30,13 @@
 //static void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta ) //Update a specific block
 
 
-//Functions you must write:
-//  static void PlayerTickUpdate( uint8_t playerid );
-//  static void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z );  (when a player right-clicks on soemthing)
-//  static void PlayerUpdate( uint8_t playerid );
-//  static void DoCustomPreloadStep( uint8_t playerid );
-//  static void InitDumbgame();
-//  int ClientHandleChat( chat, chatlen ); //return 1 if you want the chat to propogate.
-
 /* General notes for writing the game portion:
     1) You have a limited send-size, it's around 512 bytes.  Split up your commands among multiple packets.
 	2) Do not send when receiving.  Add extra flags to the player structure to send when it's time to send.
 */
 
 #include "dumbcraft.h"
+#include "dumbutils.h"
 #include <string.h>
 
 uint8_t regaddr_set;
@@ -61,12 +48,15 @@ volatile uint8_t regval_get;
 uint8_t hasset_value;
 uint8_t latch_setting_value;
 
+uint8_t didflip = 1;
+uint8_t flipx, flipy, flipz;
+
 void InitDumbgame()
 {
 	//no code.
 }
 
-void DoCustomPreloadStep( uint8_t playerid )
+void DoCustomPreloadStep( )
 {
 	struct Player * p = &Players[playerid];
 
@@ -75,26 +65,13 @@ void DoCustomPreloadStep( uint8_t playerid )
 
 	SblockInternal( 3, 64, 2, 63, 12 ); //create sign
 
-	StartSend();
-	Sbyte( 0x33 ); //sign update
-	Sint( 3 ); Sshort( 64 ); Sint( 2 );
-	Sstring( "Trigger", -1 );
-	Sstring( "", 0 );
-	Sstring( "<><", 3 );
-	Sstring( "", 0 );
-	DoneSend();
-
+	SignTextUp( 3, 64, 2, "Trigger", "<><" );
 
 	SblockInternal( 3, 64, 1, 63, 12 ); //create sign
 
 	StartSend();
-	Sbyte( 0x33 ); //sign update
-	Sint( 3 ); Sshort( 64 ); Sint( 1 );
-	Sstring( "Latch", -1 );
-	Sstring( "", 0 );
-	Sstring( "<><", 3 );
-	Sstring( "", 0 );
-	DoneSend();
+	SignTextUp( 3, 64, 1, "Latch", "<><" );
+
 
 	p->custom_preload_step = 0;
 
@@ -107,7 +84,7 @@ void DoCustomPreloadStep( uint8_t playerid )
 	p->need_to_send_lookupdate = 1;
 }
 
-void PlayerTickUpdate( int playerid )
+void PlayerTickUpdate( )
 {
 	//printf( "%f %f %f\n", SetDouble(p->x), SetDouble(p->y), SetDouble(p->z) );
 	struct Player * p = &Players[playerid];
@@ -117,23 +94,45 @@ void PlayerTickUpdate( int playerid )
 
 		if( p->y < 0 )
 		{
-			p->need_to_respawn = 1;
+			p->x = (1<<FIXEDPOINT)/2;
+			p->y = 100*(1<<FIXEDPOINT);
+			p->stance = p->y + (1<<FIXEDPOINT);
+			p->z = (1<<FIXEDPOINT)/2;
+			p->need_to_send_lookupdate = 1;
 		}
 	}
 }
 
-void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
+void PlayerBlockAction( uint8_t status, uint8_t x, uint8_t y, uint8_t z, uint8_t face )
 {
-//	struct Player * p = &Players[playerid];
+}
 
-	uint8_t didflip = 1;
+void PlayerChangeSlot( uint8_t slotno )
+{
+}
+
+void GameTick()
+{
+	if( didflip )
+	{
+		StartSend();
+		Sbyte( 0x29 ); //effect
+		Sstring( "random.click", -1 );
+		Sint( (uint16_t)(flipx<<3) );
+		Sint( (uint16_t)(flipy<<3) );
+		Sint( (uint16_t)(flipz<<3) );
+		Sfloat( 32 ); //100% volume
+		Sbyte( 63 ); //100% speed
+		DoneSend();
+		didflip = 0;
+	}
+}
+
+void PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir )
+{
 
 	if( z == 2 && x == 4 )
 	{
-#ifdef __AVR__
-		uint8_t * t = (uint8_t*)( (intptr_t)(regaddr_set + 0x20) );
-		*t = regval_set;
-#endif
 		hasset_value = 10;
 		didflip = 2;		
 	}
@@ -149,43 +148,27 @@ void PlayerClick( uint8_t playerid, uint8_t x, uint8_t y, uint8_t z )
 		z-=4;
 		switch( x )
 		{
-		case 4: regaddr_set ^= (1<<z); break;
-		case 7: regval_set ^= (1<<z); break;
-		case 10: regaddr_get ^= (1<<z); break;
-		default: didflip = 0; break;
+		case 4: regaddr_set ^= (1<<z); didflip=3; break;
+		case 7: regval_set ^= (1<<z); didflip=3; break;
+		case 10: regaddr_get ^= (1<<z); didflip=3; break;
 		}
 	}
-	else
-		didflip = 0;
 
 	if( didflip )
 	{
-		StartupBroadcast();
-		StartSend();
-		Sbyte( 0x29 ); //effect
-		Sstring( "random.click", -1 );
-		Sint( x<<3 );
-		Sint( y<<3 );
-		Sint( z<<3 );
-		Sfloat( 1<<FIXEDPOINT );	
-		Sbyte( 63 );	
-		DoneSend();
-		DoneBroadcast();
+		flipx = x;
+		flipy = y;
+		flipz = z;
 	}
-
 }
 
-void PlayerUpdate( uint8_t playerid )
+void PlayerUpdate( )
 {
 	uint8_t i;
 	struct Player * p = &Players[playerid];
 
 	if( latch_setting_value )
 	{
-#ifdef __AVR__
-		uint8_t * t = (uint8_t*)(intptr_t)(regaddr_set + 0x20);
-		*t = regval_set;
-#endif
 	}
 	if( hasset_value )
 	{
@@ -226,18 +209,12 @@ void PlayerUpdate( uint8_t playerid )
 	case 3:
 	{
 		SblockInternal( 12, 64, 3, 68, 2 ); //create sign
-#ifdef __AVR__
-		regval_get = *((uint8_t*)(intptr_t)(regaddr_get+0x20));
-#endif
 		SignUp( 12, 64, 3, "Read Value", regval_get );
 		for( i = 0; i < 8; i++ )
 		{
 			SblockInternal( 12, 64, i+4, 35, ((regval_get)&(1<<i))?0:15 );
 		}
 		break;
-	case 4: //position updates
-		SblockInternal( 6, 64, 1, 68, 1 ); //create sign
-		SignUp( 6, 64, 1, "PosX", p->x>>FIXEDPOINT );
 	}
 	default:
 		break;
@@ -245,6 +222,7 @@ void PlayerUpdate( uint8_t playerid )
 }
 
 
+void SetServerName( const char * stname );
 
 uint8_t ClientHandleChat( char * chat, uint8_t chatlen )
 {
@@ -253,6 +231,7 @@ uint8_t ClientHandleChat( char * chat, uint8_t chatlen )
 		if( strncmp( &chat[1], "title", 5 ) == 0 && chatlen > 8 )
 		{
 			chat[chatlen] = 0;
+//			SetServerName( &chat[7] );
 			return 0;
 		}
 	}
@@ -260,4 +239,3 @@ uint8_t ClientHandleChat( char * chat, uint8_t chatlen )
 }
 
 
-#endif

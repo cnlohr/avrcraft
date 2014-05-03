@@ -29,7 +29,6 @@ void Uint32To10Str( char * sto, uint32_t indata )
 //TODO: Consider de-loopifying this some.
 void Uint8To10Str( char * str, uint8_t val )
 {
-	uint8_t place = 100;
 	uint8_t count = 0;
 	while( val >= 100 ) { val -= 100; count++; }
 	str[0] = '0' + count;

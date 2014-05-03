@@ -273,17 +273,6 @@ void Sstring( const char * str, uint8_t len )
 	}
 }
 
-void SstringPGM( const char * str )
-{
-	uint8_t len = strlen_P( (const char*)str );
-	uint8_t i;
-	Svarint( len );
-	for( i = 0; i < len; i++ )
-	{	
-		Sbyte( pgm_read_byte( &str[i] ) );
-	}
-}
-
 //Send a buffer (NOTE: this cannot be used with a string as the byte-sizes are two-wide)
 void Sbuffer( const uint8_t * buf, uint8_t len )
 {

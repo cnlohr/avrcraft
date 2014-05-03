@@ -32,6 +32,5 @@ extern char my_server_name[];
 #define NEED_PLAYER_CLICK
 //#define NEED_PLAYER_BLOCK_ACTION
 //#define NEED_SLOT_CHANGE
-//#define NEED_PLAYER_CLICK
 
 #endif
