@@ -49,7 +49,7 @@
 #define MAX_FRAMELEN     578
 
 //Do this to disable printf's and save space
-#define MUTE_PRINTF
+//#define MUTE_PRINTF
 
 
 //DHCP will allow your device to automatically acquire an IP address. 

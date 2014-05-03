@@ -192,8 +192,7 @@ int8_t enc424j600_init( const unsigned char * macaddy )
 //		return -2;
 //	}
 
-	//EECON2, add on "txmac" so we can save that time internally.
-	enc424j600_write_ctrl_reg16( EECON2L, 0xEB00 );
+	enc424j600_write_ctrl_reg16( EECON2L, 0xCB00 );
 	enc424j600_write_ctrl_reg16( EERXSTL, RX_BUFFER_START );
 	enc424j600_write_ctrl_reg16( EMAMXFLL, MAX_FRAMELEN );
 	//Must have RX tail here otherwise we will have difficulty moving our buffer along.
