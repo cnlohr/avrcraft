@@ -47,7 +47,6 @@ uint8_t dhcp_clocking = 1;
 uint16_t dhcp_seconds_remain = 0;
 uint8_t dhcp_ticks_in_sec = 0;
 const char * DHCPName = 0;
-uint8_t dhcp_pending_id = 0;
 
 void HandleDHCP( uint16_t len )
 {
@@ -66,14 +65,9 @@ void HandleDHCP( uint16_t len )
 
 	//Make sure transaction IDs match.
 	enc424j600_popblob( tmp, 4 );
-	if( strncmp( tmp, MyMAC, 3 ) != 0 )
+	if( strncmp( tmp, MyMAC, 4 ) != 0 )
 	{
 		//Not our request?
-		return;
-	}
-
-	if( tmp[3] != dhcp_pending_id )
-	{
 		return;
 	}
 
@@ -124,7 +118,6 @@ void HandleDHCP( uint16_t len )
 			length--;
 			break;
 		}
-		case 0x33: //Lease time
 		case 0x3a: //Renewal time
 		{
 			if( length < 4 || !is_ack_packet ) break;
@@ -184,6 +177,7 @@ void TickDHCP()
 	}
 
 	dhcp_ticks_in_sec = 0;
+//		sendhex4( dhcp_seconds_remain );
 
 	if( dhcp_seconds_remain == 0 )
 	{
@@ -230,13 +224,7 @@ void RequestNewIP( uint8_t mode, uint8_t * negotiating_ip, uint8_t * dhcp_server
 */
 	enc424j600_pushpgmblob( PSTR("\x00\x44\x00\x43\x00\x00\x00\x00\x01\x01\x06"), 12 ); //NOTE: Last digit is 0 on wire, not included in string.
 
-	enc424j600_pushblob( MyMAC, 3 );
-
-	if( mode == 1 )
-	{
-		dhcp_pending_id++;
-	}
-	enc424j600_push8( dhcp_pending_id ); // Transaction ID
+	enc424j600_pushblob( MyMAC, 4 );
 
 	enc424j600_push16( dhcp_clocking ); //seconds
 	enc424j600_pushzeroes( 10 ); //unicast, CLIADDR, YIADDR
@@ -254,8 +242,10 @@ void RequestNewIP( uint8_t mode, uint8_t * negotiating_ip, uint8_t * dhcp_server
 	enc424j600_push8( 0x35 );  //DHCP Message Type
 	enc424j600_push16( 0x0100 | mode );
 
-	enc424j600_push16( 0x3204 ); //Requested IP address. (4 length)
-	enc424j600_pushblob( negotiating_ip, 4 );
+	{
+		enc424j600_push16( 0x3204 ); //Requested IP address. (4 length)
+		enc424j600_pushblob( negotiating_ip, 4 );
+	}
 
 	if( dhcp_server ) //request
 	{

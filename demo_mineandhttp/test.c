@@ -322,7 +322,7 @@ void HTTPCustomCallback( )
 
 
 
-unsigned char MyIP[4] = { 192, 168, 33, 142 };
+unsigned char MyIP[4] = { 192, 168, 0, 152 };
 unsigned char MyMask[4] = { 255, 255, 255, 0 };
 unsigned char MyGateway[4] = { 192, 168, 0, 1 };
 unsigned char MyMAC[6];
