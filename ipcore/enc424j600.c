@@ -236,9 +236,19 @@ uint16_t enc424j600_get_write_length()
 	return enc424j600_read_ctrl_reg16( EEGPWRPTL ) + 6 - sendbaseaddress;
 }
 
-int8_t enc424j600_xmitpacket( uint16_t start, uint16_t len )
+void enc424j600_wait_for_dma()
 {
 	uint8_t i = 0;
+	//wait for previous DMA operation to complete
+	while( ( enc_read_ctrl_reg8_common( EECON1L ) & _BV(5) )  &&  (i++ < 250 ) ) standarddelay(); //This can wait up to 3.75mS
+}
+
+int8_t enc424j600_xmitpacket( uint16_t start, uint16_t len )
+{
+	uint8_t retries = 0;
+	uint8_t i = 0;
+
+	enc424j600_wait_for_dma();
 
 	//Wait for previous packet to complete.
 	//ECON1 is in the common banks, so we can get info on it more quickly.
@@ -249,18 +259,50 @@ int8_t enc424j600_xmitpacket( uint16_t start, uint16_t len )
 		{
 			//Consider clearing the packet in transmission, here.
 			//Done by clearing TXRTS
+#ifdef ETH_DEBUG
+			sendstr( "XMIT Could not send.\n" );
+#endif
 			return -1;
 		}
 		//_delay_us(1);
 		standarddelay();
 	}
 
+#ifdef ETH_DEBUG
+	int ret = enc424j600_read_ctrl_reg16( EETXSTATL );
+	if( ret & _BV(10 ) )
+	{
+		sendstr( "LCOL\n" );
+	}
+	if( ret & _BV(9 ) )
+	{
+		sendstr( "MAXCOL\n" );
+	}
+	if( ret & _BV(8 ) )
+	{
+		sendstr( "EXDEFER\n" );
+	}
+	if( ret & _BV(7 ) )
+	{
+		//XXX NOTE This happens even in full-duplex 100M mode.
+		//WHY?  SERIOUSLY DOES THIS DATASHEET HATE ME???
+		//XXX This is triggered very frequently.
+//		sendstr( "DEF2\n" );
+	}
+	if( ret & _BV(4 ) )
+	{
+		sendstr( "CRCBAD\n" );
+	}
+#endif
+
 	enc424j600_write_ctrl_reg16( EETXSTL, start );
 	enc424j600_write_ctrl_reg16( EETXLENL, len );
 
 	//Don't worry, by default this part inserts the padding and crc.
-
 	enc_oneshot( ESSETTXRTS );
+
+	enc424j600_wait_for_dma();
+
 
 	return 0;
 }
@@ -349,13 +391,6 @@ unsigned short enc424j600_recvpack()
 	}
 
 	return 0;
-}
-
-void enc424j600_wait_for_dma()
-{
-	uint8_t i = 0;
-	//wait for previous DMA operation to complete
-	while( ( enc_read_ctrl_reg8_common( EECON1L ) & _BV(5) )  &&  (i++ < 250 ) ) standarddelay(); //This can wait up to 3.75mS
 }
 
 

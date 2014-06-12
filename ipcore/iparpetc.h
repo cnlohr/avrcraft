@@ -27,6 +27,9 @@ extern unsigned short localport;
 extern unsigned long icmp_in;
 extern unsigned long icmp_out;
 
+//Utility, for getting a new scratchpad.
+uint16_t NetGetScratch();
+
 //Utility out
 void SwitchToBroadcast();
 void send_etherlink_header( unsigned short type );

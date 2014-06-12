@@ -289,7 +289,7 @@ void HTTPCustomCallback( )
 			value += hex2val( *(bp++) )<<4;
 			value += hex2val( *(bp++) );
 
-			unsigned short * cc = (unsigned char*)address;
+			unsigned short * cc = (unsigned short*)address;
 			*cc = value;
 		}
 		else

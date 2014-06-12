@@ -40,6 +40,9 @@ uint8_t TCPReceiveData( uint8_t connid, uint16_t totallen );
 //This is called right before the socket /must/ be closed.  Like if the remote host sent us a RST
 void    TCPConnectionClosing( uint8_t conn );
 
+//Finish current packet, but don't xmit.  This handles size and checksums.
+void FinishTCPPacket( uint16_t length );
+
 //user must call this 100x/second
 void TickTCP(); 
 

@@ -48,9 +48,6 @@
 //Minimum MTU every host must be able to handle; 
 #define MAX_FRAMELEN     578
 
-//Do this to disable printf's and save space
-//#define MUTE_PRINTF
-
 
 //DHCP will allow your device to automatically acquire an IP address. 
 #define ENABLE_DHCP_CLIENT
@@ -74,6 +71,7 @@
 //  uint8_t TCPReceiveData( uint8_t connection, uint16_t totallen )
 //
 #define INCLUDE_TCP
+//#define TCP_DOUBLESEND
 
 //Note: TCP Buffers are placed immediately after the scratchpad.
 //Send buffer size for TCP packet
@@ -99,7 +97,8 @@
 #endif
 
 //Scratchpad for sending out packets like UDP, ICMP, ARP, etc.
-#define TX_SCRATCHPAD_END  1024
+#define TX_SCRATCHES 3
+#define TX_SCRATCHPAD_END  (MAX_FRAMELEN * TX_SCRATCHES)
 
 #define RX_BUFFER_SIZE   (3264)
 #define RX_BUFFER_END    0x5FFF
@@ -124,6 +123,12 @@
 #endif
 
 #define FREE_ENC_END (RX_BUFFER_START-2)
+
+//Do this to disable printf's and save space
+#define MUTE_PRINTF
+
+//Do we want to debug the ethernet?
+//#define ETH_DEBUG
 
 
 #ifndef ASSEMBLY

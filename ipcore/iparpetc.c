@@ -34,6 +34,14 @@ static unsigned short i;  //For use within the scope of an in-file function, not
 #include "tcp.h"
 #endif
 
+uint16_t NetGetScratch()
+{
+	static uint8_t scratch = 0;
+	scratch++;
+	if( scratch == TX_SCRATCHES ) scratch = 0;
+	return scratch * MAX_FRAMELEN;
+}
+
 
 #ifdef ENABLE_DHCP_CLIENT
 
@@ -199,7 +207,7 @@ void RequestNewIP( uint8_t mode, uint8_t * negotiating_ip, uint8_t * dhcp_server
 	SwitchToBroadcast();
 
 	enc424j600_stopop();
-	enc424j600_startsend( 0 );
+	enc424j600_startsend( NetGetScratch() );
 	send_etherlink_header( 0x0800 );
 
 	//Tricky - backup our IP - we want to spoof it to 0.0.0.0
@@ -354,7 +362,7 @@ static void HandleICMP()
 		enc424j600_stopop();
 		payload_from_start = enc424j600_read_ctrl_reg16( EERXRDPTL );
 
-		enc424j600_startsend( 0 );
+		enc424j600_startsend( NetGetScratch() );
 		send_etherlink_header( 0x0800 );
 		send_ip_header( iptotallen, ipsource, 0x01 );
 
@@ -426,7 +434,7 @@ static void HandleArp( )
 
 		//We must send a response, so we termiante the packet now.
 		enc424j600_finish_callback_now();
-		enc424j600_startsend( 0 );
+		enc424j600_startsend( NetGetScratch() );
 		send_etherlink_header( 0x0806 );
 
 		PUSH16( 0x0001 ); //Ethernet
@@ -482,7 +490,13 @@ void enc424j600_receivecallback( uint16_t packetlen )
 	unsigned char ipproto;
 
 	//First and foremost, make sure we have a big enough packet to work with.
-	if( packetlen < 8 ) return;
+	if( packetlen < 8 )
+	{
+#ifdef ETH_DEBUG
+		sendstr( "Runt\n" );
+#endif
+		return;
+	}
 
 	//macto (ignore) our mac filter handles this.
 	enc424j600_dumpbytes( 6 );
@@ -492,7 +506,9 @@ void enc424j600_receivecallback( uint16_t packetlen )
 	//Make sure it's ethernet!
 	if( POP != 0x08 )
 	{
+#ifdef ETH_DEBUG
 		sendstr( "Not ethernet.\n" );
+#endif
 		return;
 	}
 
@@ -509,11 +525,11 @@ void enc424j600_receivecallback( uint16_t packetlen )
 
 	if( POP != 0x45 )
 	{
-//		sendstr( "CFH\n" );
+#ifdef ETH_DEBUG
 		sendstr( "Not IP.\n" );
+#endif
 		return;
 	}
-
 
 	POP; //differentiated services field.
 
@@ -550,7 +566,9 @@ void enc424j600_receivecallback( uint16_t packetlen )
 
 	if( !is_the_packet_for_me )
 	{
+#ifdef ETH_DEBUG
 		sendstr( "not for me\n" );
+#endif
 		return;
 	}
 
@@ -654,7 +672,7 @@ int8_t RequestARP( uint8_t * ip )
 
 	//No MAC Found.  Send an ARP request.
 	enc424j600_finish_callback_now();
-	enc424j600_startsend( 0 );
+	enc424j600_startsend( NetGetScratch() );
 	send_etherlink_header( 0x0806 );
 
 	PUSH16( 0x0001 ); //Ethernet
@@ -711,7 +729,7 @@ void DoPing( uint8_t pingslot )
 	//must set macfrom to be the IP address of the target.
 	memcpy( macfrom, ClientArpTable[arpslot].mac, 6 );
 
-	enc424j600_startsend( 0 );
+	enc424j600_startsend( NetGetScratch() );
 	send_etherlink_header( 0x0800 );
 	send_ip_header( 32, ClientPingEntries[pingslot].ip, 0x01 );
 
