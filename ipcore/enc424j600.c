@@ -161,8 +161,18 @@ int8_t enc424j600_init( const unsigned char * macaddy )
 	ETCSDDR |= ETCS;
 	ETCSPORT |= ETCS;
 
-	standarddelay();
+#ifdef ETH_HARDWARE_UART
+#if ETH_HARDWARE_UART == 1
+	UBRR1 = 0; //10MHz?
+	UCSR1C = _BV(UMSEL11) | _BV(UMSEL10);
+	UCSR1B = _BV(RXEN1) | _BV(TXEN1);
+	UBRR1 = 0;
+#else
+#error Only UART 1 is supported for hardware SPI ethernet.
+#endif
+#endif
 
+	standarddelay();
 	enc424j600_write_ctrl_reg16( EEUDASTL, 0x1234 );
 	if( enc424j600_read_ctrl_reg16( EEUDASTL ) != 0x1234 )
 		return -1;

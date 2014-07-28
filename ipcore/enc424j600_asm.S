@@ -12,6 +12,10 @@
 
 #ifdef ASM_SPI
 
+
+
+#ifndef ETH_HARDWARE_UART
+
 .global espiR_asm
 espiR_asm:
 
@@ -294,4 +298,94 @@ espiW_asm:
 	ret
 #endif
 
+
+
+
+#else
+
+//Hardware SPI.
+
+
+.global espiW_asm
+espiW_asm:
+
+espiwwait:
+	lds r0, UCSR1A
+	sbrs r0, UDRE1
+	rjmp espiwwait
+
+	sts UDR1, r24
+
+elopbrw:
+	lds r0, UCSR1A
+	sbrs r0, RXC1
+	rjmp elopbrw
+
+	lds r0, UDR1
+	ret
+
+
+.global espiR_asm
+espiR_asm:
+	ori r24, 0xff
+	sts UDR1, r24
+
+elopbr:
+	lds r0, UCSR1A
+	sbrs r0, RXC1
+	rjmp elopbr
+
+	lds r24, UDR1
+
+	ret	
+
+
+
+
+//More low-level high performance functions.
+
+.global espiFASTRSetup
+espiFASTRSetup:
+
+	ori r24, 0xff
+	sts UDR1, r24
+	ret	
+
+
+.global espiFASTR
+espiFASTR:
+
+rejumpfastr:
+
+	lds r0, UCSR1A
+	sbrs r0, RXC1
+	rjmp rejumpfastr
+
+	lds r24, UDR1
+
+	ori r25, 0xff
+	sts UDR1, r25
+
+	ret
+
+.global espiEndFASTR
+espiEndFASTR:
+	lds r0, UCSR1A
+	sbrs r0, RXC1
+	rjmp rejumpfastr
+
+	lds r24, UDR1
+	ret
+
+
+
 #endif
+
+
+
+
+
+#endif
+
+
+

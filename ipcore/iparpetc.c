@@ -120,6 +120,8 @@ void HandleDHCP( uint16_t len )
 			{
 				//IP Is valid.
 				is_ack_packet = 1;
+				if( 0 == dhcp_seconds_remain )
+					dhcp_seconds_remain = 0xffff;
 				memcpy( MyIP, tmpip, 4 );
 			}
 
