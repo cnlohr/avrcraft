@@ -212,7 +212,7 @@ int main( void )
 
 	eeprom_read_block( &my_server_name[0], &my_server_name_eeprom[0], 16 );
 	if( my_server_name[0] == 0 || my_server_name[0] == (char)0xff )
-		SetServerName( "AVRCraft" );
+		SetServerName( "fast328" );
 
 	//Configure T2 to "overflow" at 100 Hz, this lets us run the TCP clock
 	TCCR2A = _BV(WGM21) | _BV(WGM20);
