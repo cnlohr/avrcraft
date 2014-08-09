@@ -167,8 +167,13 @@ int8_t enc424j600_init( const unsigned char * macaddy )
 	UCSR1C = _BV(UMSEL11) | _BV(UMSEL10);
 	UCSR1B = _BV(RXEN1) | _BV(TXEN1);
 	UBRR1 = 0;
+#elif ETH_HARDWARE_UART == 0
+	UBRR0 = 0; //10MHz?
+	UCSR0C = _BV(UMSEL01) | _BV(UMSEL00);
+	UCSR0B = _BV(RXEN0) | _BV(TXEN0);
+	UBRR0 = 0;
 #else
-#error Only UART 1 is supported for hardware SPI ethernet.
+	#error Only UART 1 is supported for hardware SPI ethernet.
 #endif
 #endif
 

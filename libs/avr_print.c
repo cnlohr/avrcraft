@@ -26,6 +26,10 @@
 #define SPI_TINY
 #define SPI_USI
 
+#elif   defined( __AVR_ATmega644__ ) || defined( __AVR_ATmega644PA__ ) || defined( __AVR_ATmega644A__ )
+#define SPI_DDR_SET {DDRB&=~(_BV(7)|_BV(5)|_BV(4));DDRB|=_BV(6);} 
+#define SPI_MEGA
+
 #elif   defined (__AVR_ATmega168__) || defined( __AVR_ATmega328__)
 #define SPI_DDR_SET {DDRB&=0xD3;DDRB|=0x10;} 
 #define SPI_MEGA

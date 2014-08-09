@@ -68,13 +68,14 @@ LIBS:network0606
 LIBS:ws2812b
 LIBS:bridge-MB2S-TP
 LIBS:ap1117
+LIBS:avrcraft-poed-cache
 EELAYER 27 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title ""
-Date "19 jul 2014"
+Date "28 jul 2014"
 Rev ""
 Comp ""
 Comment1 ""
@@ -2145,4 +2146,12 @@ Text Label 1050 1850 0    60   ~ 0
 PD2/INT0
 Text Label 1150 2500 0    60   ~ 0
 PD5/OC0B
+Text Label 1350 3200 0    60   ~ 0
+MOSI
+Text Label 1600 3350 0    60   ~ 0
+MISO
+Text Label 1600 3800 0    60   ~ 0
+SCK
+Text Label 1600 3900 0    60   ~ 0
+RST
 $EndSCHEMATC

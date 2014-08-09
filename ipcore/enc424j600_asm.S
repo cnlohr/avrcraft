@@ -306,36 +306,50 @@ espiW_asm:
 //Hardware SPI.
 
 
+#if ETH_HARDWARE_UART == 0 
+#define LUCS UCSR0A
+#define LUDRE UDRE0
+#define LURXC RXC0
+#define LUDR  UDR0
+#elif ETH_HARDWARE_UART == 1
+#define LUCS UCSR1A
+#define LUDRE UDRE1
+#define LURXC RXC1
+#define LUDR  UDR1
+#else
+#error No register mapping defined for ETH_HARDWARE_UART in modes other than 1 and 0.
+#endif
+
 .global espiW_asm
 espiW_asm:
 
 espiwwait:
-	lds r0, UCSR1A
-	sbrs r0, UDRE1
+	lds r0, LUCS
+	sbrs r0, LUDRE
 	rjmp espiwwait
 
-	sts UDR1, r24
+	sts LUDR, r24
 
 elopbrw:
-	lds r0, UCSR1A
-	sbrs r0, RXC1
+	lds r0, LUCS
+	sbrs r0, LURXC
 	rjmp elopbrw
 
-	lds r0, UDR1
+	lds r0, LUDR
 	ret
 
 
 .global espiR_asm
 espiR_asm:
 	ori r24, 0xff
-	sts UDR1, r24
+	sts LUDR, r24
 
 elopbr:
-	lds r0, UCSR1A
-	sbrs r0, RXC1
+	lds r0, LUCS
+	sbrs r0, LURXC
 	rjmp elopbr
 
-	lds r24, UDR1
+	lds r24, LUDR
 
 	ret	
 
@@ -348,7 +362,7 @@ elopbr:
 espiFASTRSetup:
 
 	ori r24, 0xff
-	sts UDR1, r24
+	sts LUDR, r24
 	ret	
 
 
@@ -357,24 +371,24 @@ espiFASTR:
 
 rejumpfastr:
 
-	lds r0, UCSR1A
-	sbrs r0, RXC1
+	lds r0, LUCS
+	sbrs r0, LURXC
 	rjmp rejumpfastr
 
-	lds r24, UDR1
+	lds r24, LUDR
 
 	ori r25, 0xff
-	sts UDR1, r25
+	sts LUDR, r25
 
 	ret
 
 .global espiEndFASTR
 espiEndFASTR:
-	lds r0, UCSR1A
-	sbrs r0, RXC1
+	lds r0, LUCS
+	sbrs r0, LURXC
 	rjmp rejumpfastr
 
-	lds r24, UDR1
+	lds r24, LUDR
 	ret
 
 
