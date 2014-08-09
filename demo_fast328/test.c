@@ -208,8 +208,6 @@ int main( void )
 	sendstr( "HELLO\n" );
 	setup_clock();
 
-	PCMSK2 |= _BV(6);
-	PCICR |=  _BV(2);
 	sei();
 
 	eeprom_read_block( &my_server_name[0], &my_server_name_eeprom[0], 16 );
