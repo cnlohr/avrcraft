@@ -585,6 +585,8 @@ void enc424j600_receivecallback( uint16_t packetlen )
 #ifdef INCLUDE_UDP
 	case 17:
 	{
+		remoteport = POP16;
+		localport = POP16;
 		//err is this dangerous?
 		HandleUDP( POP16 );
 		break;	
