@@ -130,7 +130,6 @@ void GameTick()
 
 void PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir )
 {
-
 	if( z == 2 && x == 4 )
 	{
 		hasset_value = 10;
@@ -219,6 +218,15 @@ void PlayerUpdate( )
 	default:
 		break;
 	}
+/*					StartSend();
+					Sbyte( 0x21 );
+					Sint( 1 );
+					Sint( 0 );
+					Sbyte( 1 ); //Continuous ground-up
+					Sshort( rand()&0xff ); //bit-map (of no data).  Let's hope Minecraft doesn't catch on.
+					Svarint( 0 ); //sizeof( mapdata ) );
+					DoneSend();
+*/
 }
 
 

@@ -10,8 +10,6 @@
 #define WORLDTYPE 0
 #define GAMEMODE  0
 
-#define MAPSIZECHUNKS 1
-
 #define RUNSPEED 5
 #define WALKSPEED 3
 
