@@ -551,12 +551,12 @@ void UpdateServer()
 		{
 			StartSend();
 			Sbyte(0x08); //new
-			Sdouble( p->x );
-			Sdouble( p->stance );
-			Sdouble( p->z );
+			Sdouble( 0 );
+			Sdouble( 0 );
+			Sdouble( 0 );
 			Sfloat( p->yaw );
 			Sfloat( p->pitch );
-			Sbyte(p->onground);
+			Sbyte(0x07); //xyz relative
 			DoneSend();
 
 			p->need_to_send_lookupdate = 0;
