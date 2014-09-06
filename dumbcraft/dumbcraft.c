@@ -14,6 +14,8 @@
 #include <util10.h>
 #include <alloca.h>
 
+#define ONGROUND 1
+
 #ifdef __AVR__
 #include "avr_print.h"
 #include <avr/pgmspace.h> 
@@ -35,13 +37,17 @@ uint8_t playerid;
 //You could reset it every 24,000 ticks to make the day/night cycle right.
 uint16_t dumbcraft_tick = 0;
 
-//We store one gzipped set of chunks.  DO NOT Store this in ram if you can avoid it!
-//I'm having trouble generating these, this one seems to be recognized by the client.
-//See the mapmake folder for more info.  It'd be great if someone could fix that...
-const uint8_t mapdata[] PROGMEM = {
-	0x78, 0xda, 0xed, 0xd6, 0x01, 0x01, 0x00, 0x00, 0x04, 0x03, 0x30, 0xf4, 0xef, 0x4c, 0x0f, 0xdf, 
-	0x52, 0x6c, 0x06, 0x00, 0x00, 0x00, 0xf8, 0xae, 0x00, 0x00, 0x00, 0x80, 0xf7, 0x16, 0x00, 0x88, 
-	0x63, 0x40, 0x00, 0x90, 0xa7, 0xc3, 0x1d, 0x1c, 0xed, 0x19, 0x79,  };
+//This is the raw data we're supposed to put on the wire for
+//sending "compress packets; here's the 0,0 chunk; don't compress packets"
+//look in 'mkmk2' for more info.
+uint8_t compeddata[] PROGMEM = {
+	0x02, 0x46, 0x00, 0x3b, 0x8e, 0x52, 0x78, 0xda, 0xed, 0xc4, 0xb1, 0x11, 0x00, 0x10, 0x10, 0x00, 
+	0xb0, 0x7f, 0xa7, 0xd0, 0x99, 0xc1, 0x4a, 0x26, 0xb2, 0xb3, 0x05, 0x34, 0x96, 0x70, 0x92, 0x22, 
+	0x23, 0xae, 0x8c, 0xb6, 0x66, 0xdd, 0x25, 0xba, 0x24, 0x49, 0x92, 0x24, 0x49, 0x92, 0x24, 0x49, 
+	0x92, 0x24, 0x49, 0x92, 0x24, 0x49, 0x7a, 0xaa, 0xfc, 0xdc, 0x01, 0x3b, 0x2d, 0x42, 0x75, 0x0d, 
+	0x06, 0x78, 0xda, 0x73, 0xfb, 0x0f, 0x04, 0xfc, 0x00, 0x0f, 0xab, 0x04, 0x52, };
+
+//#include "mkmk2/final.h"
 
 const uint8_t default_spawn_metadata[] PROGMEM = { 
 	0x00, //Type: Byte, Key: 0 (Masks)
@@ -134,6 +140,16 @@ void DoneSend()
 	}
 }
 
+void SendRawPGMData( uint8_t * PROGMEM dat, uint16_t len )
+{
+	uint16_t i;
+	for( i = 0; i < len; i++ )
+	{
+		extSbyte( pgm_read_byte(&dat[i]) );
+	}
+}
+
+
 void Sbyte( uint8_t b )
 {
 	if( sendsize < SENDBUFFERSIZE )
@@ -173,6 +189,20 @@ uint16_t Rshort()
 	ret |= dcrbyte()<<8;
 	ret |= dcrbyte();
 	return ret;
+}
+
+void Rposition( uint8_t * x, uint8_t * y, uint8_t * z )
+{
+	dcrbyte();
+	dcrbyte();
+	*x = dcrbyte()<<2;
+	uint8_t nr = dcrbyte();
+	*x |= nr>>6;
+	*y = nr<<6;
+	*y |= dcrbyte()>>2;
+	dcrbyte();
+	dcrbyte();
+	*z = dcrbyte();
 }
 
 uint16_t Rvarint()
@@ -347,12 +377,12 @@ void UpdatePlayerSpeed( uint8_t speed )
 {
 	StartSend();
 	Sbyte(0x20); //NEW
-	Sint( playerid );
+	Svarint( playerid );
 	Sint( 1 );
 	Sstring( "generic.movementSpeed", -1 );	
 	//SstringPGM( PSTR("generic.movementSpeed") );
 	Sdouble( speed );
-	Sshort(0);
+	Svarint(0);
 	DoneSend();
 }
 
@@ -479,7 +509,7 @@ void UpdateServer()
 		//For players who are actually joining the server:
 		//	p->need_to_login then
 		//	p->need_to_spawn then
-		//  p->next_chunk_to_load = 1..? for all chunks, one per packet. Then
+		//  p->next_chunk_to_load = 1..? for all chunks*16, one per packet (needs to update rows). Then 
 		//	p->custom_preload_step then
 		//   (Do your custom step)... Then, when YOU ARE DONE set
 		//  p->need_to_send_lookupdate
@@ -545,6 +575,7 @@ void UpdateServer()
 			Sbyte( 0 ); //peaceful
 			Sbyte( MAX_PLAYERS );
 			Sstring( "default", 7 );
+			Sbyte( 0 ); //Reduce debug info?
 			DoneSend();
 
 			p->need_to_spawn = 0;
@@ -574,7 +605,7 @@ void UpdateServer()
 		if( p->next_chunk_to_load )
 		{
 			uint16_t ichk = p->next_chunk_to_load - 1;
-			if( p->next_chunk_to_load > MAPSIZECHUNKS*MAPSIZECHUNKS )
+			if( p->next_chunk_to_load > 16 )
 			{
 				p->next_chunk_to_load = 0;
 				p->custom_preload_step = 1;
@@ -582,17 +613,23 @@ void UpdateServer()
 			else
 			{
 				p->next_chunk_to_load++;
+				if( (ichk & 0x0f) == 0 )
+				{
+					SendRawPGMData( compeddata, sizeof(compeddata) );
+				}
+/*
 				StartSend();
-				Sbyte( 0x21 );
-				Sint( (uint8_t)(ichk/MAPSIZECHUNKS) );
-				Sint( (uint8_t)(ichk%MAPSIZECHUNKS) );
-				Sbyte( 1 ); //Continuous ground-up
-				Sshort( 0x08 ); //bit-map
-				Sshort( 0x08 ); //bit-map
-				Sint( sizeof( mapdata ) );
-
-				SbufferPGM( mapdata, sizeof( mapdata ) );
+				Sbyte( 0x22 );
+				Sint( 0 );
+				Sint( 0 );
+				Svarint( 16 );
+				for( i = 0; i < 16; i++ )
+				{
+					Sshort( (i<<12) | ((ichk&0x0f)<<8) | 63 );
+					Svarint( 2<<4 ); //Grass
+				}
 				DoneSend();
+*/
 			}
 		}
 
@@ -704,23 +741,28 @@ void TickServer()
 			{
 				StartSend();
 				Sbyte( 0x18 );  //New
-				Sint( (uint8_t)(playerid + PLAYER_EID_BASE) );
+				Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 				Sint( p->x );
 				Sint( p->y );
 				Sint( p->z );
 				Sbyte( p->nyaw );
 				Sbyte( p->npitch );
+				Sbyte( ONGROUND );
 				DoneSend();
 			}
 			else
 			{
 				StartSend();
-				Sbyte( 0x15 ); //New
-				Sint( (uint8_t)(playerid + PLAYER_EID_BASE) );
+				Sbyte( 0x17 ); //New
+				Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 				Sbyte( diffx );
 				Sbyte( diffy );
 				Sbyte( diffz );
+				Sbyte( p->nyaw );
+				Sbyte( p->npitch );
+				Sbyte( ONGROUND );
 				DoneSend();
+				p->op = p->pitch; p->ow = p->yaw;
 			}
 			p->ox = p->x;
 			p->oy = p->y;
@@ -732,14 +774,15 @@ void TickServer()
 		{
 			StartSend();
 			Sbyte( 0x16 ); //New
-			Sint( (uint8_t)(playerid + PLAYER_EID_BASE) );
+			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			Sbyte( p->npitch );
+			Sbyte( ONGROUND );
 			DoneSend();
 
 			StartSend();
 			Sbyte( 0x19 ); //New
-			Sint( (uint8_t)(playerid + PLAYER_EID_BASE) );
+			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
 
@@ -942,16 +985,16 @@ void GotData( uint8_t playerno )
 #ifdef NEED_PLAYER_CLICK
 		case 0x08:	//Block placement / right-click, used for levers.
 		{
-			uint8_t x = Rint();
-			uint8_t y = dcrbyte();
-			uint8_t z = Rint();
+			uint8_t x, y, z;
+			Rposition( &x, &y, &z );
 			uint8_t dir = dcrbyte();
-			/*uint8_t sl = */Rslot();
+			/*uint8_t sl = */	Rslot();
 			dcrbyte();
 			dcrbyte();
 			dcrbyte();
 			PlayerClick( x, y, z, dir );
 			break;
+			
 		}
 #endif
 #ifdef NEED_SLOT_CHANGE
@@ -1091,6 +1134,7 @@ void GotData( uint8_t playerno )
 			Sbuffer( chat, chatlen );
 			Sbyte( '"' );
 			Sbyte( '}' );
+			Sbyte( 0 );
 			DoneSend();
 			DoneBroadcast();
 		}

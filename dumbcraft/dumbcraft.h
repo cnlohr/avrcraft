@@ -3,9 +3,9 @@
 #ifndef _DUMBCRAFT_H
 #define _DUMBCRAFT_H
 
-#define PROTO_VERSION 5
-#define PROTO_VERSION_STR "5"
-#define LONG_PROTO_VERSION "1.7.9"
+#define PROTO_VERSION 47
+#define PROTO_VERSION_STR "47"
+#define LONG_PROTO_VERSION "1.8"
 
 #define PLAYER_EID_BASE 0x20
 #define PLAYER_LOGIN_EID_BASE 0x40
@@ -32,6 +32,7 @@ void GotData( uint8_t playerno );
 //you must provide (For communications, etc.)
 uint8_t Rbyte();
 uint8_t CanRead();
+void Rposition( uint8_t * x, uint8_t * y, uint8_t * z );
 void SendStart( uint8_t playerno ); //prepare a buffer for send
 void extSbyte( uint8_t byte );  //Push to either player _or_ circular buffer.
 uint8_t CanSend( uint8_t playerno ); //can this buffer be a send?

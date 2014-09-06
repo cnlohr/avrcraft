@@ -5,7 +5,7 @@ int main()
 	int byteno = 0;
 	//FILE * f = fopen( "map.gz", "rb" );
 
-	printf( "uint8_t mapdata[] = {\n\t" );
+	printf( "uint8_t compeddata[] PROGMEM = {\n\t" );
 
 	while( !feof( stdin ) )
 	{
