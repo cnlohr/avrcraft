@@ -51,3 +51,24 @@ void Uint8To16Str( char * str, uint8_t val )
 }
 
 
+uint16_t StrTo16Uint( char * str )
+{
+	uint16_t ret = 0;
+	uint8_t yet = 0;
+	char c;
+	while( (c = (*(str++))) )
+	{
+		if( c >= '0' && c <= '9' )
+		{
+			yet = 1;
+			ret = ret * 10 + (c - '0');
+		}
+		else if( yet )
+		{
+			//Chars in the middle of the number.
+			return ret;
+		}
+	}
+	return ret;
+}
+

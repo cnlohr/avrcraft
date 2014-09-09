@@ -10,6 +10,7 @@
 
 #ifndef MUTE_PRINTF
 
+
 #if	defined (__AVR_ATtiny2313__) || defined (__AVR_ATtiny2313A__)
 #define SPI_DDR_SET {DDRB&=0x1F;DDRB|=0x40;}
 #define SPI_TINY
@@ -32,6 +33,11 @@
 
 #elif   defined (__AVR_ATmega168__) || defined( __AVR_ATmega328__)
 #define SPI_DDR_SET {DDRB&=0xD3;DDRB|=0x10;} 
+#define SPI_MEGA
+
+#elif   defined (__AVR_ATmega32U2__) || defined( __AVR_ATmega8U2__)
+
+#define SPI_DDR_SET {DDRB &= ~(_BV(0)|_BV(1)|_BV(2)); DDRB |= _BV(3);}
 #define SPI_MEGA
 
 #else

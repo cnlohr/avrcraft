@@ -40,7 +40,7 @@ uint16_t dumbcraft_tick = 0;
 //This is the raw data we're supposed to put on the wire for
 //sending "compress packets; here's the 0,0 chunk; don't compress packets"
 //look in 'mkmk2' for more info.
-uint8_t compeddata[] PROGMEM = {
+const uint8_t compeddata[] PROGMEM = {
 	0x02, 0x46, 0x00, 0x39, 0x8e, 0x64, 0x78, 0xda, 0xed, 0xd1, 0x31, 0x01, 0x00, 0x20, 0x0c, 0xc0, 
 	0xb0, 0xed, 0x43, 0x06, 0x78, 0x43, 0x08, 0xd2, 0xf7, 0x60, 0x02, 0x96, 0x46, 0x42, 0x57, 0xdc, 
 	0x32, 0xc6, 0xd9, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xd7, 0x49, 0x92, 0x24, 
@@ -123,7 +123,10 @@ void StartSend()
 void DoneSend()
 {
 	uint8_t i;
-	
+/*	sendchr('$');
+	sendhex4(sendsize);
+	sendchr('\n');
+*/
 	if( sendsize > 127 )
 	{
 		extSbyte( 128 | (sendsize&127) );
@@ -140,7 +143,7 @@ void DoneSend()
 	}
 }
 
-void SendRawPGMData( uint8_t * PROGMEM dat, uint16_t len )
+void SendRawPGMData( const uint8_t * PROGMEM dat, uint16_t len )
 {
 	uint16_t i;
 	for( i = 0; i < len; i++ )
@@ -851,7 +854,11 @@ void GotData( uint8_t playerno )
 //		if( cmdremain > 127 ) cmdremain-=2;
 //		else cmdremain--;
 		uint8_t cmd = dcrbyte();
-
+/*
+sendchr(0);sendchr( '%' );
+sendhex4(cmd);
+sendchr('\n');
+*/
 		if( p->handshake_state == 0 )
 		{
 			if( cmd == 0 )
@@ -911,6 +918,7 @@ void GotData( uint8_t playerno )
 				break;
 			}
 		}
+
 
 		switch( cmd )
 		{
