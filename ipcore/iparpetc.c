@@ -73,7 +73,7 @@ void HandleDHCP( uint16_t len )
 
 	//Make sure transaction IDs match.
 	enc424j600_popblob( tmp, 4 );
-	if( strncmp( tmp, MyMAC, 4 ) != 0 )
+	if( memcmp( tmp, MyMAC, 4 ) != 0 )
 	{
 		//Not our request?
 		return;
@@ -664,7 +664,7 @@ int8_t RequestARP( uint8_t * ip )
 
 	for( i = 0; i < ARP_CLIENT_TABLE_SIZE; i++ )
 	{
-		if( strncmp( (char*)&ClientArpTable[i].ip, ip, 4 ) == 0 ) //XXX did I mess up my casting?
+		if( memcmp( (char*)&ClientArpTable[i].ip, ip, 4 ) == 0 ) //XXX did I mess up my casting?
 		{
 			return i;
 		}
