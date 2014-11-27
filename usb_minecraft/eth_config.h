@@ -27,7 +27,7 @@
 
 #define TCP_TICKS_BEFORE_DEAD 10
 
-#define CIRC_BUFFER_SIZE 64
+#define CIRC_BUFFER_SIZE 54
 
 extern unsigned char MyMAC[];
 

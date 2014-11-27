@@ -36,7 +36,7 @@ LUFA_SRC_USB = \
 LUFA_SRC_SERIAL          := LUFA/Drivers/Peripheral/$(ARCH)/Serial_$(ARCH).c
 
 MYNETLIB = net_compat.c iparpetc.c
-SRC          = $(TARGET).c Descriptors.c $(LUFA_SRC_USB) $(LUFA_SRC_SERIAL)  myRNDIS.c tcp_awful.c $(MYNETLIB) dumbgame.c ../dumbcraft/dumbcraft.c ../dumbcraft/dumbutils.c ../libs/avr_print.c ../libs/util10.c
+SRC          = $(TARGET).c Descriptors.c $(LUFA_SRC_USB) $(LUFA_SRC_SERIAL)  myRNDIS.c tcp_awful.c $(MYNETLIB) dumbgame.c ../dumbcraft/dumbcraft.c ../dumbcraft/dumbutils.c ../libs/avr_print.c ../libs/util10.c ws2812.c
 
 LUFA_PATH    = LUFA
 CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -IConfig/

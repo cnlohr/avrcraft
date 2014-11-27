@@ -1,4 +1,4 @@
-//Copyright 2012 <>< Charles Lohr, under the MIT-x11 or NewBSD license.  You choose.
+	//Copyright 2012 <>< Charles Lohr, under the MIT-x11 or NewBSD license.  You choose.
 
 //Your game code goes here.
 //This file is complete sphagetti code, you'll probably want to gut it for your project.
@@ -39,6 +39,8 @@
 #include "dumbutils.h"
 #include <string.h>
 #include <avr/pgmspace.h>
+
+#include "ws2812.h"
 
 
 void InitDumbgame()
@@ -102,8 +104,29 @@ void PlayerChangeSlot( uint8_t slotno )
 uint8_t didflip;
 uint8_t sel = 0;
 uint8_t toup = 0;
+
+const uint8_t PROGMEM wools[48] = {
+	0xDD, 0xDD, 0xDD,
+	0xDB, 0x7D, 0x3E,
+	0xB3, 0x50, 0xBC,
+	0x6B, 0x8A, 0xC9,
+	0xB1, 0xA6, 0x27,
+	0x41, 0xAE, 0x38,
+	0xD0, 0x84, 0x99,
+	0x40, 0x40, 0x40,
+	0x9A, 0xA1, 0xA1,
+	0x2E, 0x6E, 0x89,
+	0x7E, 0x3D, 0xB5,
+	0x2E, 0x38, 0x8D,
+	0x4F, 0x32, 0x1F,
+	0x35, 0x46, 0x1B,
+	0x96, 0x34, 0x30,
+	0x19, 0x16, 0x16,
+};
+
 void GameTick()
 {
+
 
 	if( didflip )
 	{
@@ -117,6 +140,8 @@ void GameTick()
 		Sbyte( 63 ); //100% speed
 		DoneSend();
 		didflip = 0;
+
+		SetManyWS( pgm_read_byte( &wools[sel*3+0] ), pgm_read_byte( &wools[sel*3+1] ), pgm_read_byte( &wools[sel*3+2] ), 20 );
 	}
 }
 

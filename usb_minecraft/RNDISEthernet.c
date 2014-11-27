@@ -43,7 +43,7 @@
 #include "tcp_awful.h"
 #include "dumbconfig.h"
 #include <dumbcraft.h>
-
+#include "ws2812.h"
 
 #define POP et_pop8()
 #define POP16 et_pop16()
@@ -292,6 +292,8 @@ int main(void)
 
 	for (;;)
 	{
+//	SetManyWS( 0xff, 0x00, 0x00, 20 );
+
 		RNDIS_Task();
 		USB_USBTask();
 		_delay_us(200);

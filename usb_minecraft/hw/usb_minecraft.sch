@@ -75,14 +75,14 @@ LIBS:opto2-ltv-826s
 LIBS:rn-cay16-f4
 LIBS:rs485-isl3170
 LIBS:um5k1ntr
-LIBS:ATMegaBB-cache
+LIBS:usb_minecraft-cache
 EELAYER 27 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title ""
-Date "22 oct 2014"
+Date "27 nov 2014"
 Rev ""
 Comp ""
 Comment1 ""
@@ -626,4 +626,6 @@ Wire Wire Line
 Wire Wire Line
 	4800 5350 4800 5800
 Connection ~ 6650 6250
+Text Notes 1650 5050 0    60   ~ 0
+WARNING:\nSee PCB doc for notes.\n\nChanges:\n(1) Skip 33 ohm network\n(2) Use 2 capacitors instead of 4xnetwork.
 $EndSCHEMATC
