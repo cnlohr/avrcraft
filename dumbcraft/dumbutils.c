@@ -31,36 +31,46 @@ void GPChat( const char * text )
 	DoneSend();
 }
 
-void SpawnEntity( uint16_t eid, uint16_t uuid, uint8_t type, uint16_t x, uint16_t y, uint16_t z )
+
+
+void SpawnEntity( uint16_t eid, uint8_t type, uint16_t x, uint16_t y, uint16_t z )
 {
 	StartSend();
 	Sbyte( 0x28 );  //[UPDATED]
-	Sint( eid );
+	Svarint( eid );
 	DoneSend();
 
 	StartSend();
-	Sbyte( 0x00 ); //Updated
-	Suuid( uuid );
-	Sbyte( type );
+	Sbyte( 0x03 ); //Updated
+	Svarint( eid );
+
+	Sint( eid ); Sint( 0 ); Sint( 0 ); Sint( 0 );
+
+	Svarint( type );
+
 	Sdouble( x );
 	Sdouble( y );
 	Sdouble( z );
 	Sbyte( 0 );
 	Sbyte( 0 );
-	Sint( type );
+	Sbyte( 0 );
+
 	Sshort( 0 );
 	Sshort( 0 );
 	Sshort( 0 );
-/*
-	Sbyte( 0x00 ); //Byte, Index 0
-	Sbyte( 0x00 ); //no parameters.
-	Sbyte( 127 );*/
+
+	Sbyte( 0xff );
+
+//	Svarint( sizeof( default_spawn_metadata )  );
+//	SbufferPGM( default_spawn_metadata, sizeof( default_spawn_metadata ) );
+
 	DoneSend();
 }
 
 void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z, uint8_t yaw, uint8_t pitch )
 {
 	StartSend();
+/*
 	Sbyte( 0x26 ); //UPDATED, MAYBE!
 	Svarint( entity );
 	Sshort( x );
@@ -68,9 +78,20 @@ void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z, uint8
 	Sshort( z );
 	Sfloat( yaw );
 	Sfloat( pitch );
-	Svarint( 0 ); //no teleport
+	Svarint( 1 ); //On ground
+	DoneSend();
+*/
+	Sbyte( 0x49 );
+	Svarint( entity );
+	Sdouble( x );
+	Sdouble( y );
+	Sdouble( z );
+	Sbyte( yaw );
+	Sbyte( pitch );
+	Svarint( 1 );
 	DoneSend();
 }
+
 
 //Update a sign at a specific location with a string and a numerical value.
 void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val )
@@ -97,20 +118,49 @@ void InternalSendPosition (uint8_t x, uint8_t y, uint8_t z )
 	Sbyte( z ); //bits 0 ...
 }
 
+void SendNBTString( const char * str )
+{
+	unsigned short sl = strlen( str );
+	Sshort( sl );
+	Sbuffer( (const uint8_t*)str, sl );
+}
+
 void SignTextUp( uint8_t x, uint8_t y, uint8_t z, const char * line1, const char * line2 )
 {
-	//Sign updates do not work. XXX TODO.
-/*
+	int len1 = strlen( line1 );
+	int len2 = strlen( line2 );
+
+	//Big thanks in this section goes to Na "Sodium" from #mcdevs on freenode IRC.
+
 	StartSend();
 	Sbyte( 0x09 ); //[UPDATED]  (Update entity)
 	InternalSendPosition( x, y, z );
 	Sbyte( 9 ); // "Set text on sign"
-	Sstring( line1, -1 );
-	Sstring( " ", 1 );
-	Sstring( line2, -1 );
-	Sstring( " ", 1 );
+
+	Sbyte( 0x0a );
+	Sshort( 0 ); //No name for compound
+
+	Sbyte(1);	SendNBTString( "x" ); Sbyte(x);
+	Sbyte(1);	SendNBTString( "y" ); Sbyte(y);
+	Sbyte(1);	SendNBTString( "z" ); Sbyte(z);
+
+	Sbyte( 8 );
+	SendNBTString( "Text1" );
+	Sshort( 11+ len1+14 );
+	Sbuffer( (const uint8_t*)"{\"bold\":\"true\",\"text\":\"", 9+14 ); //http://minecraft.gamepedia.com/Commands#Raw_JSON_Text 
+	Sbuffer( (const uint8_t*)line1, len1 );
+	Sbuffer( (const uint8_t*)"\"}", 2 );
+	
+	Sbyte( 8 );
+	SendNBTString( "Text3" );
+	Sshort( 11+ len2 );
+	Sbuffer( (const uint8_t*)"{\"text\":\"", 9 );
+	Sbuffer( (const uint8_t*)line2, len2 );
+	Sbuffer( (const uint8_t*)"\"}", 2 );
+
+	Sbyte( 0x00 );	 //Compound end.
+
 	DoneSend();
-*/
 }
 
 
@@ -119,10 +169,10 @@ void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta )
 {
 	uint16_t tblockmeta = (bt<<4) | meta;
 
+
 	StartSend();
 	Sbyte(0x0b);  //[UPDATED]
 	InternalSendPosition( x, y, z );
 	Svarint( tblockmeta ); //block type
 	DoneSend();
-
 }

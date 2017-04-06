@@ -118,12 +118,11 @@ void SbufferPGM( const uint8_t * buf, uint8_t len );
 void SstringPGM( const char * str );
 void Sdouble( int16_t i );
 void Sfloat( int16_t i );
+void Suuid( uint16_t uuidid );
 void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
 void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta );
 void SSpawnPlayer( uint8_t pid );
 void UpdatePlayerSpeed( uint8_t speed );
-
-void Suuid( uint16_t uuidid );
 
 //You must write the following:
 uint8_t ClientHandleChat( char * chat, uint8_t chatlen ); 
