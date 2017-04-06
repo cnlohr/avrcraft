@@ -115,6 +115,9 @@ void GameTick()
 {
 	if( didflip )
 	{
+
+/*
+		//XXX TODO: Find new update
 		StartSend();
 		Sbyte( 0x29 ); //effect
 		Sstring( "random.click", -1 );
@@ -124,6 +127,7 @@ void GameTick()
 		Sfloat( 32 ); //100% volume
 		Sbyte( 63 ); //100% speed
 		DoneSend();
+*/
 		didflip = 0;
 	}
 }

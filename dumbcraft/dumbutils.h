@@ -7,8 +7,8 @@
 
 void UpdateSlot( uint8_t window, uint8_t slot, uint8_t count, uint16_t id, uint8_t damage );
 void GPChat( const char * text );
-void SpawnEntity( uint16_t eid, uint8_t type, uint16_t x, uint16_t y, uint16_t z );
-void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z );
+void SpawnEntity( uint16_t eid, uint16_t uuid, uint8_t type, uint16_t x, uint16_t y, uint16_t z );
+void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z, uint8_t yaw, uint8_t pitch );
 
 //Update a sign at a specific location with a string and a numerical value.
 void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );

@@ -24,7 +24,7 @@ makecv : makecv.o
 	./makecomp < $^ > $^.gz
 	./compacketize $(shell ./filesize.sh $^) < $^.gz > $@
 
-final.out : packet1.bin packet2.compacket packet3.compacket
+final.out : packet2.compacket
 	cat $^ > $@
 
 makemap : makemap.o

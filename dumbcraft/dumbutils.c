@@ -6,7 +6,7 @@
 void UpdateSlot( uint8_t window, uint8_t slot, uint8_t count, uint16_t id, uint8_t damage )
 {
 	StartSend();
-	Sbyte( 0x2F );
+	Sbyte( 0x16 );  //Updated (But rest of packet might be wrong)
 	Sbyte( window ); 
 	Sshort( slot );
 	Sshort( id );
@@ -22,7 +22,7 @@ void GPChat( const char * text )
 {
 	uint16_t chatlen = strlen( text );
 	StartSend();
-	Sbyte( 0x02 );
+	Sbyte( 0x0F ); //UPDATED
 	Svarint( chatlen + 11 );
 	Sbuffer( (const uint8_t*)"{\"text\":\"", 9 );
 	Sbuffer( (const uint8_t*)text, chatlen );
@@ -31,42 +31,44 @@ void GPChat( const char * text )
 	DoneSend();
 }
 
-void SpawnEntity( uint16_t eid, uint8_t type, uint16_t x, uint16_t y, uint16_t z )
+void SpawnEntity( uint16_t eid, uint16_t uuid, uint8_t type, uint16_t x, uint16_t y, uint16_t z )
 {
 	StartSend();
-	Sbyte( 0x14 );
+	Sbyte( 0x28 );  //[UPDATED]
 	Sint( eid );
 	DoneSend();
 
 	StartSend();
-	Sbyte( 0x0F  );
-	Svarint( eid );
+	Sbyte( 0x00 ); //Updated
+	Suuid( uuid );
 	Sbyte( type );
-	Sint( x );
-	Sint( y );
-	Sint( z );
+	Sdouble( x );
+	Sdouble( y );
+	Sdouble( z );
 	Sbyte( 0 );
 	Sbyte( 0 );
-	Sbyte( 0 );
+	Sint( type );
 	Sshort( 0 );
 	Sshort( 0 );
 	Sshort( 0 );
+/*
 	Sbyte( 0x00 ); //Byte, Index 0
 	Sbyte( 0x00 ); //no parameters.
-	Sbyte( 127 );
+	Sbyte( 127 );*/
 	DoneSend();
 }
 
-void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z )
+void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z, uint8_t yaw, uint8_t pitch )
 {
 	StartSend();
-	Sbyte( 0x18 );
-	Sint( entity );
-	Sint( x );
-	Sint( y );
-	Sint( z );
-	Sbyte( 0 );
-	Sbyte( 0 );
+	Sbyte( 0x26 ); //UPDATED, MAYBE!
+	Svarint( entity );
+	Sshort( x );
+	Sshort( y );
+	Sshort( z );
+	Sfloat( yaw );
+	Sfloat( pitch );
+	Svarint( 0 ); //no teleport
 	DoneSend();
 }
 
@@ -97,14 +99,18 @@ void InternalSendPosition (uint8_t x, uint8_t y, uint8_t z )
 
 void SignTextUp( uint8_t x, uint8_t y, uint8_t z, const char * line1, const char * line2 )
 {
+	//Sign updates do not work. XXX TODO.
+/*
 	StartSend();
-	Sbyte( 0x33 ); //sign update
+	Sbyte( 0x09 ); //[UPDATED]  (Update entity)
 	InternalSendPosition( x, y, z );
+	Sbyte( 9 ); // "Set text on sign"
 	Sstring( line1, -1 );
-	Sstring( "", 0 );
+	Sstring( " ", 1 );
 	Sstring( line2, -1 );
-	Sstring( "", 0 );
+	Sstring( " ", 1 );
 	DoneSend();
+*/
 }
 
 
@@ -114,19 +120,9 @@ void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta )
 	uint16_t tblockmeta = (bt<<4) | meta;
 
 	StartSend();
-	Sbyte(0x23);  //NEW
+	Sbyte(0x0b);  //[UPDATED]
 	InternalSendPosition( x, y, z );
 	Svarint( tblockmeta ); //block type
 	DoneSend();
 
-/*
-	StartSend();
-	Sbyte(0x22);
-	Sint(0);
-	Sint(0);
-	Svarint(1);
-	Sshort( y | (z<<8) | (x<<12) );
-	Svarint( tblockmeta ); //block type
-	DoneSend();
-*/
 }

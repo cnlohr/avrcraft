@@ -1,6 +1,8 @@
 #ifndef _DUMBCONFIG_H
 #define _DUMBCONFIG_H
 
+#define DEBUG_DUMBCRAFT
+
 #define MAX_PLAYERS 3
 #define MAX_PLAYERS_STRING "3"
 

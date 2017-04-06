@@ -1,3 +1,0 @@
-#Fire up protocol compression
-46
-ff ff ff ff 0f

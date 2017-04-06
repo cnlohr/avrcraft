@@ -3,9 +3,9 @@
 #ifndef _DUMBCRAFT_H
 #define _DUMBCRAFT_H
 
-#define PROTO_VERSION 47
-#define PROTO_VERSION_STR "47"
-#define LONG_PROTO_VERSION "1.8"
+#define PROTO_VERSION 316
+#define PROTO_VERSION_STR "316"
+#define LONG_PROTO_VERSION "1.11"
 
 #define PLAYER_EID_BASE 0x20
 #define PLAYER_LOGIN_EID_BASE 0x40
@@ -83,6 +83,8 @@ extern struct Player
 	uint8_t handshake_state;
 	uint8_t update_number;
 
+	uint8_t set_compression:1; //Once set, need to handle packets differently.
+
 	uint8_t tick_since_update:1;
 	uint8_t ticks_since_heard;
 	uint8_t playername[MAX_PLAYER_NAME]; //todo: store playername length
@@ -99,6 +101,8 @@ void Rbuffer( uint8_t * buffer, uint8_t size );
 void StartSend(); //For single packet.
 void DoneSend(); //For single packet
 void Sbyte( uint8_t b );
+void Sdouble( int16_t i );
+void Sfloat( int16_t i );
 void Svarint( uint16_t v );
 uint32_t Rint();
 uint16_t Rshort();
@@ -118,6 +122,8 @@ void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
 void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta );
 void SSpawnPlayer( uint8_t pid );
 void UpdatePlayerSpeed( uint8_t speed );
+
+void Suuid( uint16_t uuidid );
 
 //You must write the following:
 uint8_t ClientHandleChat( char * chat, uint8_t chatlen ); 
