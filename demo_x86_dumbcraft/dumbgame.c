@@ -38,6 +38,7 @@
 #include "dumbcraft.h"
 #include "dumbutils.h"
 #include <string.h>
+#include <stdlib.h>
 
 uint8_t regaddr_set;
 uint8_t regval_set;
@@ -75,6 +76,7 @@ void DoCustomPreloadStep( )
 
 	p->custom_preload_step = 0;
 
+	SpawnEntity( 3, 58, 10*32, 64*32, 1*32 );
 
 	//actually spawns
 	p->x = (1<<FIXEDPOINT)/2;
@@ -113,21 +115,25 @@ void PlayerChangeSlot( uint8_t slotno )
 
 void GameTick()
 {
+	static int frame;
+	//Need to constantly send updates otherwise blocks won't change.
+	SblockInternal( 1, 96, 1, 0+((frame++)&1), 0 );
+
 	if( didflip )
 	{
+		EntityUpdatePos( 3, rand()%512, 64*32, rand()%512, 0, 0 );
 
-/*
-		//XXX TODO: Find new update
 		StartSend();
-		Sbyte( 0x29 ); //effect
-		Sstring( "random.click", -1 );
+		Sbyte( 0x46 );
+		Svarint( 20 ); //Sound effect #
+		Svarint( 0 ); //Category #
 		Sint( (uint16_t)(flipx<<3) );
 		Sint( (uint16_t)(flipy<<3) );
 		Sint( (uint16_t)(flipz<<3) );
 		Sfloat( 32 ); //100% volume
-		Sbyte( 63 ); //100% speed
+		Sfloat( 32 ); //100% speed
 		DoneSend();
-*/
+
 		didflip = 0;
 	}
 }
@@ -177,6 +183,7 @@ void PlayerUpdate( )
 	{
 		hasset_value--;
 	}
+
 	SblockInternal( 4, 64, 2, 69, hasset_value?6:14 );
 	SblockInternal( 4, 64, 1, 69, latch_setting_value?6:14 );
 
@@ -222,15 +229,6 @@ void PlayerUpdate( )
 	default:
 		break;
 	}
-/*					StartSend();
-					Sbyte( 0x21 );
-					Sint( 1 );
-					Sint( 0 );
-					Sbyte( 1 ); //Continuous ground-up
-					Sshort( rand()&0xff ); //bit-map (of no data).  Let's hope Minecraft doesn't catch on.
-					Svarint( 0 ); //sizeof( mapdata ) );
-					DoneSend();
-*/
 }
 
 
