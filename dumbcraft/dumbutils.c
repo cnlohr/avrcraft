@@ -159,7 +159,7 @@ void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta )
 {
 	uint16_t tblockmeta = (bt<<4) | meta;
 
-//And it's at midnight for me... so I can't fully write everything up.  But there is the block change packet, and that is what you want, the IDs just are different now.  See https://wiki.vg/Data_Generators for a bit of info, and https://pokechu22.github.io/Burger/1.13.2_numeric.html might also help
+//@pokechu22: And it's at midnight for me... so I can't fully write everything up.  But there is the block change packet, and that is what you want, the IDs just are different now.  See https://wiki.vg/Data_Generators for a bit of info, and https://pokechu22.github.io/Burger/1.13.2_numeric.html might also help
 
 	StartSend();
 	Sbyte(0x0b);  //https://wiki.vg/Protocol#Block_Change
