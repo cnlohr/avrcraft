@@ -6,7 +6,7 @@
 void UpdateSlot( uint8_t window, uint8_t slot, uint8_t count, uint16_t id, uint8_t damage )
 {
 	StartSend();
-	Sbyte( 0x16 );  //Updated (But rest of packet might be wrong)
+	Sbyte( 0x16 );  //Updated (But rest of packet might be wrong) XXX Probably all wrong!!!
 	Sbyte( window ); 
 	Sshort( slot );
 	Sshort( id );
@@ -22,7 +22,7 @@ void GPChat( const char * text )
 {
 	uint16_t chatlen = strlen( text );
 	StartSend();
-	Sbyte( 0x0F ); //UPDATED
+	Sbyte( 0x0E ); //https://wiki.vg/Protocol#Chat_Message_.28clientbound.29
 	Svarint( chatlen + 11 );
 	Sbuffer( (const uint8_t*)"{\"text\":\"", 9 );
 	Sbuffer( (const uint8_t*)text, chatlen );
@@ -35,35 +35,25 @@ void GPChat( const char * text )
 
 void SpawnEntity( uint16_t eid, uint8_t type, uint16_t x, uint16_t y, uint16_t z )
 {
+printf( "SPAWN ENTITY\n" );
 	StartSend();
-	Sbyte( 0x28 );  //[UPDATED]
+	Sbyte( 0x03 );  //https://wiki.vg/Protocol#Spawn_Mob
 	Svarint( eid );
-	DoneSend();
-
-	StartSend();
-	Sbyte( 0x03 ); //Updated
-	Svarint( eid );
-
-	Sint( eid ); Sint( 0 ); Sint( 0 ); Sint( 0 );
-
 	Svarint( type );
-
 	Sdouble( x );
 	Sdouble( y );
 	Sdouble( z );
-	Sbyte( 0 );
-	Sbyte( 0 );
-	Sbyte( 0 );
+	Sbyte( 0 );	//YAW
+	Sbyte( 0 );	//PITCH
+	Sbyte( 0 );	//HEAD PITCH
 
+	Sshort( 0 );	//VELOCITY [xyz]
 	Sshort( 0 );
 	Sshort( 0 );
-	Sshort( 0 );
 
-	Sbyte( 0xff );
-
+	Sbyte( 0xff ); //Metadata EOF
 //	Svarint( sizeof( default_spawn_metadata )  );
 //	SbufferPGM( default_spawn_metadata, sizeof( default_spawn_metadata ) );
-
 	DoneSend();
 }
 
@@ -133,11 +123,11 @@ void SignTextUp( uint8_t x, uint8_t y, uint8_t z, const char * line1, const char
 	//Big thanks in this section goes to Na "Sodium" from #mcdevs on freenode IRC.
 
 	StartSend();
-	Sbyte( 0x09 ); //[UPDATED]  (Update entity)
+	Sbyte( 0x09 ); //https://wiki.vg/Protocol#Update_Block_Entity
 	InternalSendPosition( x, y, z );
 	Sbyte( 9 ); // "Set text on sign"
 
-	Sbyte( 0x0a );
+	Sbyte( 0x0a );	//NBT tag
 	Sshort( 0 ); //No name for compound
 
 	Sbyte(1);	SendNBTString( "x" ); Sbyte(x);
@@ -169,10 +159,12 @@ void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta )
 {
 	uint16_t tblockmeta = (bt<<4) | meta;
 
+//And it's at midnight for me... so I can't fully write everything up.  But there is the block change packet, and that is what you want, the IDs just are different now.  See https://wiki.vg/Data_Generators for a bit of info, and https://pokechu22.github.io/Burger/1.13.2_numeric.html might also help
 
 	StartSend();
-	Sbyte(0x0b);  //[UPDATED]
+	Sbyte(0x0b);  //https://wiki.vg/Protocol#Block_Change
 	InternalSendPosition( x, y, z );
 	Svarint( tblockmeta ); //block type
 	DoneSend();
 }
+

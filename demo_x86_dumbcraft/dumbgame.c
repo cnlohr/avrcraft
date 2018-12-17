@@ -65,7 +65,7 @@ void DoCustomPreloadStep( )
 	SblockInternal( 16, 64, 16, 89, 0 );
 
 	SblockInternal( 3, 64, 2, 63, 12 ); //create sign
-
+/*
 	SignTextUp( 3, 64, 2, "Trigger", "<><" );
 
 	SblockInternal( 3, 64, 1, 63, 12 ); //create sign
@@ -76,8 +76,11 @@ void DoCustomPreloadStep( )
 
 	p->custom_preload_step = 0;
 
-	SpawnEntity( 3, 58, 10*32, 64*32, 1*32 );
+*/
 
+/*
+	SpawnEntity( 3, 58, 10*32, 64*32, 1*32 );
+*/
 	//actually spawns
 	p->x = (1<<FIXEDPOINT)/2;
 	p->y = 100*(1<<FIXEDPOINT);
@@ -117,6 +120,7 @@ void GameTick()
 {
 	static int frame;
 	//Need to constantly send updates otherwise blocks won't change.
+return;
 	SblockInternal( 1, 96, 1, 0+((frame++)&1), 0 );
 
 	if( didflip )

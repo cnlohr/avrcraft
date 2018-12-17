@@ -42,9 +42,9 @@ uint16_t dumbcraft_tick = 0;
 //look in 'mkmk2' for more info.
 uint8_t compeddata[] PROGMEM = {
 	0x36, 0x92, 0x62, 0x78, 0xda, 0xed, 0xc1, 0x31, 0x0d, 0x00, 0x20, 0x0c, 0x00, 0xb0, 0x91, 0x70, 
-	0x70, 0x4e, 0x02, 0xda, 0x50, 0xb2, 0x03, 0xe1, 0x3c, 0x98, 0x80, 0xb4, 0x9d, 0x71, 0xb5, 0xb1, 
+	0x70, 0x4e, 0x03, 0xd2, 0x50, 0xb2, 0x03, 0xe1, 0x3c, 0x98, 0x80, 0xb4, 0x9d, 0x71, 0xb5, 0xb1, 
 	0x57, 0x46, 0x65, 0x0f, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0xf5, 0xf5, 0x00, 0x00, 0x00, 
-	0x00, 0xdf, 0x3b, 0xbb, 0x10, 0x41, 0xb0, };
+	0x00, 0xdf, 0x3b, 0x1d, 0x43, 0x41, 0xb2, };
 
 const char pingjson1[] PROGMEM = "{\"description\":\"";
 const char pingjson2[] PROGMEM = "\", \"players\":{\"max\":";
@@ -104,7 +104,11 @@ uint8_t dcrbyte()
 }
 
 static uint8_t localsendbuffer[SENDBUFFERSIZE];
+#if SENDBUFFERSIZE > 255
+static uint16_t sendsize;
+#else
 static uint8_t sendsize;
+#endif
 
 void StartSend()
 {
@@ -113,7 +117,11 @@ void StartSend()
 
 void DoneSend()
 {
+#if SENDBUFFERSIZE > 255
+	uint16_t i;
+#else
 	uint8_t i;
+#endif
 
 	uint8_t comp = playerid == MAX_PLAYERS || Players[playerid].set_compression;
 	if( comp )
@@ -385,7 +393,7 @@ void SSpawnPlayer( uint8_t pid )
 	//printf( "Spawn Player: %d %s\n", pid+PLAYER_EID_BASE, p->playername ); //XXX TODO This does not seem to be called correctly.
 
 	StartSend();
-	Sbyte( 0x2D );
+	Sbyte( 0x30 );	//https://wiki.vg/Protocol#Player_List_Item
 	Svarint( 0 ); //Add player
 	Svarint( 1 ); //1 player
 	Sint( pid + PLAYER_EID_BASE );	Sint( 0 );	Sint( 0 );	Sint( 0 );
@@ -397,7 +405,7 @@ void SSpawnPlayer( uint8_t pid )
 	DoneSend();
 
 	StartSend();
-	Sbyte( 0x05 );  //[UPDATED]
+	Sbyte( 0x05 );  //https://wiki.vg/Protocol#Spawn_Player
 	Svarint( pid + PLAYER_EID_BASE );
 	Sint( pid + PLAYER_EID_BASE );	Sint( 0 );	Sint( 0 );	Sint( 0 );  //UUID
 	Sdouble( p->x );
@@ -408,6 +416,7 @@ void SSpawnPlayer( uint8_t pid )
 	Sbyte( 0xff );
 	DoneSend();
 #else
+	//With newer versions you can't treat players like entities :(
 	SpawnEntity( pid + PLAYER_EID_BASE, pid + PLAYER_EID_BASE, 27, p->x, p->y, p->z );
 #endif
 	//Will set location and close loading screen.
@@ -417,13 +426,13 @@ void SSpawnPlayer( uint8_t pid )
 void UpdatePlayerSpeed( uint8_t speed )
 {
 	StartSend();
-	Sbyte(0x4a); //[UPDATED]
+	Sbyte(0x52); //https://wiki.vg/Protocol#Entity_Properties
 	Svarint( playerid );
 	Sint( 1 );
 	Sstring( "generic.movementSpeed", -1 );	
 	//SstringPGM( PSTR("generic.movementSpeed") );
 	Sdouble( speed );
-	Svarint(0);
+	Svarint(0);	//No modifiers
 	DoneSend();
 }
 
@@ -499,6 +508,8 @@ void UpdateServer()
 			Sbuffer( p->playername, 8 );
 			DoneSend();
 			p->need_to_reply_to_ping = 0;
+
+			printf( "DO PING REPLY\n" );
 		}
 
 		//XXX TODO Player list doesn't seem to be sending.
@@ -523,6 +534,8 @@ void UpdateServer()
 			Sstring( buffo, -1 );
 			DoneSend();
 
+			printf( "PLAYERLIST\n" );
+
 			p->need_to_send_playerlist = 0;
 		}
 
@@ -534,8 +547,11 @@ void UpdateServer()
 				goto now_sending_broadcast;
 			else
 			{
-				//From the game portion
-				PlayerUpdate();
+				if( p->next_chunk_to_load == 0 ) //Make sure this is done!
+				{
+					//From the game portion
+					PlayerUpdate();
+				}
 			}
 		}
 
@@ -559,9 +575,9 @@ void UpdateServer()
 		if( p->has_logged_on )
 		{
 			//If we turn around too far, we MUST warp a reset, because if we get an angle too big,
-			//we overflow the angle in our 16-bit fixed point.
+			//we overflow the angle in our 16-bit on a fixed point.
 
-			//It's too expensive to do the proper modulus on a floating point value.
+			//It's too expensive to do the proper modulus floating point value.
 			//Additionally, we need to say stance++, otherwise we will fall through the ground when we turn around.
 			if( p->yaw < -11520 ) { p->yaw += 11520; p->need_to_send_lookupdate = 1; p->stance++; }
 			if( p->yaw > 11520 )  { p->yaw -= 11520; p->need_to_send_lookupdate = 1; p->stance++; }
@@ -586,22 +602,24 @@ void UpdateServer()
 			p->z = (1<<FIXEDPOINT)/2;
 			p->need_to_send_lookupdate = 1;
 			p->need_to_respawn = 0;
+			printf( "RESPAWN\n" );
 		}
 
 		if( p->need_to_send_lookupdate )
 		{
 			StartSend();
-			Sbyte(0x2E); //updated
+			Sbyte(0x32); //https://wiki.vg/Protocol#Player_Position_And_Look_.28clientbound.29
 			Sdouble( p->x );
 			Sdouble( p->y );
 			Sdouble( p->z );
 			Sfloat( p->yaw );
 			Sfloat( p->pitch );
-			Sbyte(0x00); //xyz absolute
+			Sbyte(0x00); //xyz absolute XXX TODO LOOK AT THIS
 			Svarint( 0 );
 			DoneSend();
 
 			p->need_to_send_lookupdate = 0;
+			printf( "LOOKUPDATE\n" );
 		}
 
 		//We're just logging in!
@@ -611,7 +629,7 @@ void UpdateServer()
 
 			//Newer versions need not send this, maybe?
 			StartSend();
-			Sbyte( 0x23 );  //Updated (Join Game)
+			Sbyte( 0x25 );  //https://wiki.vg/Protocol#Join_Game
 			Sint( (uint8_t)(playerid + PLAYER_LOGIN_EID_BASE) );
 			Sbyte( GAMEMODE ); //creative
 			Sint( WORLDTYPE ); //overworld
@@ -636,6 +654,8 @@ void UpdateServer()
 				}
 			}
 
+			printf( "NEED TO SPAWN\n" );
+
 		}
 		if( p->custom_preload_step )
 		{
@@ -654,12 +674,22 @@ void UpdateServer()
 //			p->next_chunk_to_load = 0;
 
 			int pnc = p->next_chunk_to_load++;
-
 			if( pnc == 2 )
 			{
-				SendRawPGMData( compeddata, sizeof(compeddata) );
+				//SendRawPGMData( compeddata, sizeof(compeddata) );
+				StartSend();
+				Sbyte( 0x22 ); //https://wiki.vg/Protocol#Chunk_Data
+				Sint( 0 ); 	//X
+				Sint( 0 );  //Z
+				Sbyte( 1 );	//Ground-up continuous.
+				Svarint( 0 ); //Nothing in the bitmap.
+				Svarint( 1024 ); //Size of data in bytes.
+				int k;
+				for( k = 0; k < 256; k++ ) Sint( 0x7f );
+				Svarint( 0 ); //No NBTs
+				DoneSend();
 			}
-
+			
 			int chk = pnc - 3;
 			if( chk == 16 )
 			{
@@ -670,22 +700,21 @@ void UpdateServer()
 			{
 				int k = 0;
 				for( k = 0; k < 16; k++ )
-					SblockInternal( k, 63, chk, 2, 0 );
+				SblockInternal( k, 63, chk, 2, 0 );
 			}
 		}
 
 		//This is triggered when players want to actually join.
 		if( p->need_to_login )
 		{
-			StartSend();
-			Sbyte( 0x03 ); //Set compression threshold
-			Svarint( 1000 ); //Arbitrary, so we only hit it when we send chunks.
-			DoneSend();
+		//	StartSend();
+		//	Sbyte( 0x03 ); //https://wiki.vg/Protocol#Set_Compression
+		//	Svarint( 10000 ); //Arbitrary, so we only hit it when we send chunks.
+		//	DoneSend();
+			p->set_compression = 0;
 
-			p->set_compression = 1;
-
 			StartSend();
-			Sbyte( 0x02 ); //Login success
+			Sbyte( 0x02 ); //https://wiki.vg/Protocol#Login_Success
 			Suuid( playerid + PLAYER_LOGIN_EID_BASE );
 			p->need_to_login = 0;
 			Sstring( (const char*)p->playername, -1 );
@@ -693,7 +722,7 @@ void UpdateServer()
 
 			//Do this, it is commented out for other reasons.
 			p->need_to_spawn = 1;
-
+			printf( "NEED TO LOGIN\n" );
 		}
 
 
@@ -701,10 +730,12 @@ void UpdateServer()
 		{
 
 			StartSend();
-			Sbyte( 0x1f );
-			Svarint( dumbcraft_tick );
+			Sbyte( 0x21 ); //https://wiki.vg/Protocol#Keep_Alive_.28clientbound.29
+			Sint( 0 );
+			Sint( dumbcraft_tick );
 			DoneSend();
 			p->need_to_send_keepalive = 0;
+			printf( "KEEP ALIVE\n" );
 		}
 
 
@@ -712,6 +743,7 @@ void UpdateServer()
 		{
 			UpdatePlayerSpeed( p->running?RUNSPEED:WALKSPEED );
 			p->doneupdatespeed = 1;
+			printf( "SPEED UPDATE\n" );
 		}
 
 now_sending_broadcast:
@@ -773,20 +805,20 @@ void TickServer()
 			if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
 			{
 				StartSend();
-				Sbyte( 0x49 );  //Updated (Teleport Entity)
+				Sbyte( 0x50 );  //https://wiki.vg/Protocol#Entity_Teleport
 				Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 				Sdouble( p->x );
 				Sdouble( p->y );
 				Sdouble( p->z );
 				Sbyte( p->nyaw );
-				Sbyte( p->npitch );
+				Sbyte( p->npitch );	//XXX TODO: Double-check
 				Sbyte( ONGROUND );
 				DoneSend();
 			}
 			else
 			{
 				StartSend();
-				Sbyte( 0x26 ); //Updated (Entity Look And Relative Move)
+				Sbyte( 0x29 ); //https://wiki.vg/Protocol#Entity_Look_And_Relative_Move
 				Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 				Sshort( diffx*128 );
 				Sshort( diffy*128 );
@@ -799,7 +831,7 @@ void TickServer()
 			}
 
 			StartSend();
-			Sbyte( 0x34 ); //Updated (look at with head)
+			Sbyte( 0x39 ); //https://wiki.vg/Protocol#Entity_Head_Look
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
@@ -814,7 +846,7 @@ void TickServer()
 		{
 
 			StartSend();
-			Sbyte( 0x27 ); //Entity Look
+			Sbyte( 0x2A ); //https://wiki.vg/Protocol#Entity_Look
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			Sbyte( p->npitch );
@@ -822,7 +854,7 @@ void TickServer()
 			DoneSend();
 
 			StartSend();
-			Sbyte( 0x34 ); //Updated (look at with head)
+			Sbyte( 0x39 ); //https://wiki.vg/Protocol#Entity_Head_Look
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
@@ -969,11 +1001,11 @@ void GotData( uint8_t playerno )
 
 		switch( cmd )
 		{
-		case 0x00: //Teleport confirm (ignore)
+		case 0x00: //https://wiki.vg/Protocol#Teleport_Confirm
 			break;
-		case 0x1A: //Animation for hand waving or other stuff.  (TODO)
+		case 0x27: //https://wiki.vg/Protocol#Animation_.28serverbound.29
 			break;
-		case 0x14: //Entity Action
+		case 0x19: //https://wiki.vg/Protocol#Entity_Action
 			break;
 		case 0x0B:
 			//p->need_to_send_keepalive = 1;
@@ -1101,7 +1133,7 @@ void GotData( uint8_t playerno )
 		{
 			StartupBroadcast();			
 			StartSend();
-			Sbyte( 0x0F ); //Updated
+			Sbyte( 0x0E ); //https://wiki.vg/Protocol#Chat_Message_.28clientbound.29
 			Svarint( chatlen + pll + 2 + 10 + 2 );
 			Sbuffer( (const uint8_t*)"{\"text\":\"<", 10 );
 			Sbuffer( p->playername, pll );

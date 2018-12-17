@@ -69,47 +69,10 @@ int main()
 	int r = 0;
 	int x, y;
 
-/*
-	for( cell = 0; cell < 16*16*16/2; cell++ )
-	{
-		mapdata[maplen++] = cell;
-		mapdata[maplen++] = 0x20;
-		mapdata[maplen++] = 0x02;
-		mapdata[maplen++] = 0x00;
-		mapdata[maplen++] = 0x0f;
-	}
-
-	for( cell = 0; cell < 16*16; cell++ )
-	{
-		mapdata[maplen++] = 1;
-	}
-*/
-
-	mapdata[maplen++] = 16; //# of bits per block.
+	mapdata[maplen++] = 16; //# of bits per block.  NOTE THE PACKET START (SEE BELOW) this dos revent the palette from existing.
 	mapdata[maplen++] = 0; //No palette.
 
 	maplen += MakeVarint(&mapdata[maplen],(16*16*16/2));
-
-#if 0
-	maplen += MakeVarint(&mapdata[maplen],(16*16*16*13+31)/32);
-	fprintf( stderr, "WORDS: %d\n", (16*16*16*13+31)/32 );
-
-	maplen = PushBits( mapdata, maplen, 0, 0 );
-	int pml = maplen;
-	for( y = 0; y < 16; y++ )
-	for( x = 0; x < 16; x++ )
-	{
-		for( cell = 0; cell < 16; cell++ ) //block
-		{
-			maplen = PushBits( mapdata, maplen, 0b0000000010011, 13 );
-			/*mapdata[maplen++] = 0x20;//(x!=9)?(0x20):0;
-			mapdata[maplen++] = 0x00;*/
-		}
-	}
-	maplen = PushBits( mapdata, maplen, 0, 0 );
-	fprintf( stderr, "%d\n", (maplen - pml)/4 );
-
-#endif
 
 	for( y = 0; y < 16; y++ )
 	for( x = 0; x < 16; x++ )
@@ -149,11 +112,11 @@ int main()
 
 	uint8_t * buffer = malloc( 1000000 );
 	int buffpl = 0;
-	buffer[buffpl++] = 0x20; //Packet
+	buffer[buffpl++] = 0x22; //https://wiki.vg/Protocol#Chunk_Data
 	buffer[buffpl++] = 0;	buffer[buffpl++] = 0;	buffer[buffpl++] = 0;	buffer[buffpl++] = 0; //Chunk X
 	buffer[buffpl++] = 0;	buffer[buffpl++] = 0;	buffer[buffpl++] = 0;	buffer[buffpl++] = 0; //Chunk Z
-	buffer[buffpl++] = 1; //ground-up
-	buffer[buffpl++] = 0x08; //bit mask
+	buffer[buffpl++] = 1; //ground-up (will need biome info)
+	buffer[buffpl++] = 0x08; //bit mask - only one chunk shall be loaded. This _should_ be a varint.
 
 	buffpl += MakeVarint( &buffer[buffpl], maplen );
 
