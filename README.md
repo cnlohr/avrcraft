@@ -19,3 +19,5 @@ This has a few subprojects.
 
 +indicates available tests.
 
+## LICENSE
+All code in this repository that was authored by me is freely licensable under the MIT/x11 or NewBSD licenses.
