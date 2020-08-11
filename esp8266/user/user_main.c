@@ -109,7 +109,7 @@ char my_server_name[16];
 
 #define OUTCIRCBUFFSIZE 1024
 #define SERVER_TIMEOUT 20
-#define TXRXBUFFER 1024
+#define TXRXBUFFER 2048
 
 
 uint8_t sendbuffer[TXRXBUFFER];
