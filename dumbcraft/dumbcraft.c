@@ -9,7 +9,6 @@
 
 #include "dumbcraft.h"
 #include <string.h>
-#include <stdio.h>
 #include "754lib.h"
 #include <util10.h>
 #include <alloca.h>

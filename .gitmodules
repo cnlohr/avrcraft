@@ -1,0 +1,3 @@
+[submodule "esp8266/esp82xx"]
+	path = esp8266/esp82xx
+	url = https://github.com/cnlohr/esp82xx

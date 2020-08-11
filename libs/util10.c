@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifndef HAS_UINT32TO10STR
 void Uint32To10Str( char * sto, uint32_t indata )
 {
 	uint32_t place = 1000000000;
@@ -25,6 +26,7 @@ void Uint32To10Str( char * sto, uint32_t indata )
 	if( pl == 0 ) sto[pl++] = '0';
 	sto[pl] = 0;
 }
+#endif
 
 //TODO: Consider de-loopifying this some.
 void Uint8To10Str( char * str, uint8_t val )

@@ -13,6 +13,12 @@
 
 #include "dumbconfig.h"
 
+//Dumbcraft Function Decorator
+#ifndef DFDEC
+#define DFDEC
+#endif
+
+
 //For floating-point values when converting to int16's
 //Smaller numbers yeild less accuracy, but bigger maximums
 #define FIXEDPOINT 5
@@ -20,31 +26,31 @@
 #include <stdint.h>
 
 //Communications core section
-void InitDumbcraft();
-void UpdateServer();
-void TickServer();
-void AddPlayer( uint8_t playerno );
-void RemovePlayer( uint8_t playerno );
-void GotData( uint8_t playerno );
+void DFDEC InitDumbcraft();
+void DFDEC UpdateServer();
+void DFDEC TickServer();
+void DFDEC AddPlayer( uint8_t playerno );
+void DFDEC RemovePlayer( uint8_t playerno );
+void DFDEC GotData( uint8_t playerno );
 
 
 
 //you must provide (For communications, etc.)
-uint8_t Rbyte();
-uint8_t CanRead();
-void Rposition( uint8_t * x, uint8_t * y, uint8_t * z );
-void SendStart( uint8_t playerno ); //prepare a buffer for send
-void extSbyte( uint8_t byte );  //Push to either player _or_ circular buffer.
-uint8_t CanSend( uint8_t playerno ); //can this buffer be a send?
-void EndSend( );
-void ForcePlayerClose( uint8_t playerno, uint8_t reason ); //you still must call removeplayer, this is just a notification.
-uint8_t UnloadCircularBufferOnThisClient( uint16_t * whence ); //Push to the current client everything remaining on their stack
-uint16_t GetCurrentCircHead();
-void StartupBroadcast(); //Set up broadcast output.
-void DoneBroadcast(); //Done with broadcast mode.
-void UpdatePlayerSpeed( uint8_t speed );  //before shifting is done by FIXEDPOINT
-void PlayerChangeSlot( uint8_t slotno );
-void PlayerBlockAction( uint8_t status, uint8_t x, uint8_t y, uint8_t z, uint8_t face );
+uint8_t DFDEC Rbyte();
+uint8_t DFDEC CanRead();
+void DFDEC  Rposition( uint8_t * x, uint8_t * y, uint8_t * z );
+void DFDEC SendStart( uint8_t playerno ); //prepare a buffer for send
+void DFDEC extSbyte( uint8_t byte );  //Push to either player _or_ circular buffer.
+uint8_t DFDEC CanSend( uint8_t playerno ); //can this buffer be a send?
+void DFDEC EndSend( );
+void DFDEC ForcePlayerClose( uint8_t playerno, uint8_t reason ); //you still must call removeplayer, this is just a notification.
+uint8_t DFDEC UnloadCircularBufferOnThisClient( uint16_t * whence ); //Push to the current client everything remaining on their stack
+uint16_t DFDEC GetCurrentCircHead();
+void DFDEC StartupBroadcast(); //Set up broadcast output.
+void DFDEC DoneBroadcast(); //Done with broadcast mode.
+void DFDEC UpdatePlayerSpeed( uint8_t speed );  //before shifting is done by FIXEDPOINT
+void DFDEC PlayerChangeSlot( uint8_t slotno );
+void DFDEC PlayerBlockAction( uint8_t status, uint8_t x, uint8_t y, uint8_t z, uint8_t face );
 
 //Game section
 
@@ -97,41 +103,41 @@ extern uint8_t dumbcraft_playercount;
 extern uint8_t playerid;
 
 //Tools for the user:
-void Rbuffer( uint8_t * buffer, uint8_t size );
-void StartSend(); //For single packet.
-void DoneSend(); //For single packet
-void Sbyte( uint8_t b );
-void Sdouble( int16_t i );
-void Sfloat( int16_t i );
-void Svarint( uint16_t v );
-uint32_t Rint();
-uint16_t Rshort();
-void Rstring( char * data, int16_t maxlen );
-int16_t Rdouble();
-int16_t Rfloat();
-void Sint( uint32_t o );
-void Sshort( uint16_t o );
-void Sstring( const char * str, uint8_t len );
-void Sbuffer( const uint8_t * buf, uint8_t len );
-void SbufferWide( const uint8_t * buf, uint8_t len );
-void SbufferPGM( const uint8_t * buf, uint8_t len );
-void SstringPGM( const char * str );
-void Sdouble( int16_t i );
-void Sfloat( int16_t i );
-void Suuid( uint16_t uuidid );
-void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
-void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta );
-void SSpawnPlayer( uint8_t pid );
-void UpdatePlayerSpeed( uint8_t speed );
+void DFDEC Rbuffer( uint8_t * buffer, uint8_t size );
+void DFDEC StartSend(); //For single packet.
+void DFDEC DoneSend(); //For single packet
+void DFDEC Sbyte( uint8_t b );
+void DFDEC Sdouble( int16_t i );
+void DFDEC Sfloat( int16_t i );
+void DFDEC Svarint( uint16_t v );
+uint32_t DFDEC Rint();
+uint16_t DFDEC Rshort();
+void DFDEC Rstring( char * data, int16_t maxlen );
+int16_t DFDEC Rdouble();
+int16_t DFDEC Rfloat();
+void DFDEC Sint( uint32_t o );
+void DFDEC Sshort( uint16_t o );
+void DFDEC Sstring( const char * str, uint8_t len );
+void DFDEC Sbuffer( const uint8_t * buf, uint8_t len );
+void DFDEC SbufferWide( const uint8_t * buf, uint8_t len );
+void DFDEC SbufferPGM( const uint8_t * buf, uint8_t len );
+void DFDEC SstringPGM( const char * str );
+void DFDEC Sdouble( int16_t i );
+void DFDEC Sfloat( int16_t i );
+void DFDEC Suuid( uint16_t uuidid );
+void DFDEC SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
+void DFDEC SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta );
+void DFDEC SSpawnPlayer( uint8_t pid );
+void DFDEC UpdatePlayerSpeed( uint8_t speed );
 
 //You must write the following:
-uint8_t ClientHandleChat( char * chat, uint8_t chatlen ); 
-void PlayerUpdate( );
-void GameTick();
-void PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir );
-void PlayerTickUpdate(  );
-void DoCustomPreloadStep(  );
-void InitDumbgame();
+uint8_t DFDEC ClientHandleChat( char * chat, uint8_t chatlen ); 
+void DFDEC PlayerUpdate( );
+void DFDEC GameTick();
+void DFDEC PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir );
+void DFDEC PlayerTickUpdate(  );
+void DFDEC DoCustomPreloadStep(  );
+void DFDEC InitDumbgame();
 
 
 
