@@ -2,9 +2,14 @@
 #define _DUMBCONFIG_H
 
 #include <esp82xxutil.h>
+#include <string.h>
 
 int strlen( const char * s );
 
+#ifndef memcpy
+#define memset ets_memset
+#define memcpy ets_memcpy
+#endif
 //#define DEBUG_DUMBCRAFT
 
 #define MAX_PLAYERS 16
