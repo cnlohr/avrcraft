@@ -269,7 +269,13 @@ int16_t Rfloat()
 
 void Svarint( uint16_t v )
 {
-	if( v > 127 )
+	if( v > 16383 )
+	{
+		Sbyte( 128 | (v&127) ); v >>= 7;	//Normally would shift sign bit but we're unsigned.
+		Sbyte( 128 | (v&127) ); v >>= 7;
+		Sbyte( v );
+	}
+	else if( v > 127 )
 	{
 		Sbyte( 128 | (v&127) );
 		Sbyte( v >> 7 );
@@ -641,8 +647,9 @@ void UpdateServer()
 			DoCustomPreloadStep( );
 			p->custom_preload_step = 0;
 			p->need_to_respawn = 1;
+			p->player_is_up_and_running = 1;
 			//This is when we checkin to the updates. (after we've sent the map chunk updates)
-//			p->outcirctail = outcirchead;
+			p->outcirctail = GetCurrentCircHead();
 		}
 
 		//Send the client a couple chunks to load on.
@@ -715,7 +722,7 @@ void UpdateServer()
 
 now_sending_broadcast:
 		//Apply any broadcast messages ... if we just spawned, then there's nothing to send.
-		if( p->has_logged_on && !p->just_spawned )
+		if( p->player_is_up_and_running )
 		{
 			p->did_not_clean_out_broadcast_last_time = UnloadCircularBufferOnThisClient( &p->outcirctail );
 		}

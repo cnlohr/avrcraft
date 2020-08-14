@@ -82,6 +82,8 @@ extern struct Player
 	uint8_t need_to_send_keepalive:1;
 	uint8_t need_to_send_lookupdate:1;
 	uint8_t need_to_reply_to_ping:1;
+	uint8_t player_is_up_and_running:1;  //Sent after the custom preload is done.
+
 	uint8_t next_chunk_to_load;
 	uint8_t custom_preload_step; //if nonzero, then do pre-load, when done, set to 0 and set p->need_to_send_lookupdate = 1;
 
