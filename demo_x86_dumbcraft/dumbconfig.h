@@ -8,7 +8,7 @@
 
 #define MAX_PLAYER_NAME 17
 
-//Overworld
+//Overworld = 0
 #define WORLDTYPE 0
 #define GAMEMODE  0
 

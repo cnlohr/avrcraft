@@ -76,7 +76,7 @@ void DoCustomPreloadStep( )
 
 	p->custom_preload_step = 0;
 
-	SpawnEntity( 3, 58, 10*32, 64*32, 1*32 );
+//	SpawnEntity( 3, 58, 10*32, 64*32, 1*32 );
 
 	//actually spawns
 	p->x = (1<<FIXEDPOINT)/2;
@@ -88,6 +88,8 @@ void DoCustomPreloadStep( )
 
 void PlayerTickUpdate( )
 {
+	return;
+
 	//printf( "%f %f %f\n", SetDouble(p->x), SetDouble(p->y), SetDouble(p->z) );
 	struct Player * p = &Players[playerid];
 	if( ( dumbcraft_tick & 0x0f ) == 0 )
@@ -115,6 +117,8 @@ void PlayerChangeSlot( uint8_t slotno )
 
 void GameTick()
 {
+	return;
+
 	static int frame;
 	//Need to constantly send updates otherwise blocks won't change.
 	SblockInternal( 1, 96, 1, 0+((frame++)&1), 0 );
@@ -140,6 +144,7 @@ void GameTick()
 
 void PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir )
 {
+	return;
 	if( z == 2 && x == 4 )
 	{
 		hasset_value = 10;
@@ -173,6 +178,7 @@ void PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir )
 
 void PlayerUpdate( )
 {
+	return;
 	uint8_t i;
 	struct Player * p = &Players[playerid];
 

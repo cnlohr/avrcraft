@@ -6,15 +6,15 @@
 void UpdateSlot( uint8_t window, uint8_t slot, uint8_t count, uint16_t id, uint8_t damage )
 {
 	StartSend();
-	Sbyte( 0x16 );  //Updated (But rest of packet might be wrong)
+	Sbyte( 0x17 );  //Updated (But rest of packet might be wrong)
 	Sbyte( window ); 
 	Sshort( slot );
-	Sshort( id );
+
+	//Slot data
+	Sbyte( 1 ); //present
+	Svarint( id );
 	Sbyte( count );
-	Sbyte( damage );
-	Sbyte( 0x00 ); //??????
-	Sbyte( 0xff );
-	Sbyte( 0xff ); 
+	Sbyte( 0x00 );  //NBT (could have other properties)
 	DoneSend();
 }
 
@@ -36,34 +36,20 @@ void GPChat( const char * text )
 void SpawnEntity( uint16_t eid, uint8_t type, uint16_t x, uint16_t y, uint16_t z )
 {
 	StartSend();
-	Sbyte( 0x28 );  //[UPDATED]
+	Sbyte( 0x00 );  //1.15.2 Spawn Entity
 	Svarint( eid );
-	DoneSend();
-
-	StartSend();
-	Sbyte( 0x03 ); //Updated
-	Svarint( eid );
-
-	Sint( eid ); Sint( 0 ); Sint( 0 ); Sint( 0 );
-
+//	Suuid( eid );
 	Svarint( type );
-
 	Sdouble( x );
 	Sdouble( y );
 	Sdouble( z );
 	Sbyte( 0 );
 	Sbyte( 0 );
-	Sbyte( 0 );
-
+//	Sbyte( 0 );
+	Sint( 0 ); //data
 	Sshort( 0 );
 	Sshort( 0 );
 	Sshort( 0 );
-
-	Sbyte( 0xff );
-
-//	Svarint( sizeof( default_spawn_metadata )  );
-//	SbufferPGM( default_spawn_metadata, sizeof( default_spawn_metadata ) );
-
 	DoneSend();
 }
 
@@ -81,7 +67,7 @@ void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z, uint8
 	Svarint( 1 ); //On ground
 	DoneSend();
 */
-	Sbyte( 0x49 );
+	Sbyte( 0x2A ); //1.15.2 Entity Position and Rotation
 	Svarint( entity );
 	Sdouble( x );
 	Sdouble( y );
@@ -127,6 +113,9 @@ void SendNBTString( const char * str )
 
 void SignTextUp( uint8_t x, uint8_t y, uint8_t z, const char * line1, const char * line2 )
 {
+	printf( "TODO: SIGN TEXT UP\n" );
+
+#if 0
 	int len1 = strlen( line1 );
 	int len2 = strlen( line2 );
 
@@ -161,6 +150,7 @@ void SignTextUp( uint8_t x, uint8_t y, uint8_t z, const char * line1, const char
 	Sbyte( 0x00 );	 //Compound end.
 
 	DoneSend();
+#endif
 }
 
 
@@ -169,9 +159,10 @@ void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta )
 {
 	uint16_t tblockmeta = (bt<<4) | meta;
 
+	printf( "BC: %d %d %d\n", x, y, z );
 
 	StartSend();
-	Sbyte(0x0b);  //[UPDATED]
+	Sbyte(0x0C);  //1.15.2  "Block Change"
 	InternalSendPosition( x, y, z );
 	Svarint( tblockmeta ); //block type
 	DoneSend();

@@ -292,6 +292,11 @@ void Sint( uint32_t o )
 	Sbyte( o );
 }
 
+void Slong( uint32_t o )
+{
+	Sint( 0 );
+	Sint( o );
+}
 void Sshort( uint16_t o )
 {
 	Sbyte( o >> 8 );
@@ -389,22 +394,24 @@ void SSpawnPlayer( uint8_t pid )
 #if 1
 	//printf( "Spawn Player: %d %s\n", pid+PLAYER_EID_BASE, p->playername ); //XXX TODO This does not seem to be called correctly.
 
+	//Player Info
 	StartSend();
-	Sbyte( 0x2D );
+	Sbyte( 0x34 ); //1.15.2
 	Svarint( 0 ); //Add player
 	Svarint( 1 ); //1 player
-	Sint( pid + PLAYER_EID_BASE );	Sint( 0 );	Sint( 0 );	Sint( 0 );
+	Svarint( (uint8_t)(pid + PLAYER_EID_BASE) );
+//	Suuid( pid + PLAYER_EID_BASE );
 	Sstring( (char*)p->playername, -1 );
 	Svarint( 0 ); //No props
 	Svarint( GAMEMODE ); //Game mode
 	Svarint( 0 ); //Ping
-	Sbyte( 0 );
+	Sbyte( 0 ); //Has display name
 	DoneSend();
 
 	StartSend();
-	Sbyte( 0x05 );  //[UPDATED]
-	Svarint( pid + PLAYER_EID_BASE );
-	Sint( pid + PLAYER_EID_BASE );	Sint( 0 );	Sint( 0 );	Sint( 0 );  //UUID
+	Sbyte( 0x57 );  //1.15.2 Entity teleport
+	//Suuid( pid + PLAYER_EID_BASE );
+	Svarint( (uint8_t)(pid + PLAYER_EID_BASE) );
 	Sdouble( p->x );
 	Sdouble( p->y );
 	Sdouble( p->z );
@@ -422,7 +429,7 @@ void SSpawnPlayer( uint8_t pid )
 void UpdatePlayerSpeed( uint8_t speed )
 {
 	StartSend();
-	Sbyte(0x4a); //[UPDATED]
+	Sbyte(0x59); //[1.15.2]
 	Svarint( playerid );
 	Sint( 1 );
 	Sstring( "generic.movementSpeed", -1 );	
@@ -493,6 +500,108 @@ void UpdateServer()
 		if( p->active ) localplayercount++;
 
 		if( !p->active || !CanSend( playerid ) ) continue;
+
+		//Send the client a couple chunks to load on. 
+		//this happens after Updated (Join Game)
+		//This is a very careful operation - we cannot interrupt it with another packet!!
+		if( p->next_chunk_to_load )
+		{
+			int pnc = p->next_chunk_to_load++;
+
+			SendStart( playerid );
+			printf( "PNC: %d\n", pnc );
+			if( pnc == 1 )
+			{
+				//StartSend();
+/*
+				Sbyte( 0x22 );
+				Sint( 0 ); //X
+				Sint( 0 ); //Z
+				Sbyte( 1 ); //Full chunk
+
+//				Svarint( 0 ); //No chunks?
+//				Sbyte( 0 );	//TODO NBT Heightmap
+//				Svarint( 0 );
+//				Svarint( 0 );
+//				DoneSend();
+	*/
+				int sendsize = 1 + 1 + 4 + 4 + 1 /* varint, bitmask */ + 1 /* NBT */ + 1 + 1024*4 +
+					 2 /* varint, sizeof data in bytes */ + 1 /* varint sizeof array */;
+				int x = 0;
+				int z = 0;
+
+				extSbyte( 128 | (sendsize&127) );
+				extSbyte( sendsize >> 7 );
+				extSbyte( 0 );
+				extSbyte( 0x22 );
+				extSbyte( 0 ); extSbyte( 0 ); extSbyte( 0 ); extSbyte( x );
+				extSbyte( 0 ); extSbyte( 0 ); extSbyte( 0 ); extSbyte( z );
+				extSbyte( 1 ); //Full-chunk.
+				extSbyte( 0x7F ); //Bitmap
+				extSbyte( 0 );	//Heightmaps
+
+				//XXX TODO HERE!!! PICK UP HERE!!! 
+				//1: Global palette!
+				//2: Why does client think chunk is unloaded?
+
+				//SendRawPGMData( compeddata, sizeof(compeddata) );
+#define BLOCKS128  32
+#define BLOCKS128B  0
+			}
+			else if( pnc < (BLOCKS128+2))
+			{
+				int i;
+				for( i = 0; i < 1024/32*4; i++ )
+					extSbyte( 0 );
+				//2..65
+				printf( "SENDING %d\n", 1024/32*4 );
+			}
+			else if( pnc < (BLOCKS128+3) )
+			{
+				//34
+				//extSbyte( 0 ); //Size of Data in bytes  
+
+				int sendsize = 0;
+				extSbyte( 128 | (sendsize&127) );
+				extSbyte( sendsize >> 7 );
+
+				printf( "Ending\n" );
+			}
+			else if( pnc < (BLOCKS128B+BLOCKS128+3) )
+			{
+			}
+			else if( pnc < (BLOCKS128B+BLOCKS128+4) )
+			{
+				extSbyte( 0 ); //Block entities 
+			}
+			else
+			{
+				//35+
+				int chk = pnc - (BLOCKS128B+BLOCKS128+4);
+				if( chk == 16 )
+				{
+					StartSend();
+					Sbyte( 0x41 ); //1.15.2 Update View Position --> TODO: Needed whenever crossing block boundaries
+					Svarint( 0 );
+					Svarint( 0 );
+					DoneSend();
+
+					p->next_chunk_to_load = 0;
+					p->custom_preload_step = 1;
+				}
+				else
+				{
+					int k = 0;
+					for( k = 0; k < 16; k++ )
+						SblockInternal( k, 63, chk, 2, 0 );
+				}
+			}
+
+			EndSend();
+			continue;
+		}
+
+
 
 		p->update_number++;
 		SendStart( playerid );
@@ -596,14 +705,14 @@ void UpdateServer()
 		if( p->need_to_send_lookupdate )
 		{
 			StartSend();
-			Sbyte(0x2E); //updated
+			Sbyte(0x36); //1.15.2 //Player Position And Look (clientbound)
 			Sdouble( p->x );
 			Sdouble( p->y );
 			Sdouble( p->z );
 			Sfloat( p->yaw );
 			Sfloat( p->pitch );
 			Sbyte(0x00); //xyz absolute
-			Svarint( 0 );
+			Svarint( 0 );	//Teleport ID
 			DoneSend();
 
 			p->need_to_send_lookupdate = 0;
@@ -614,16 +723,20 @@ void UpdateServer()
 		{
 			uint8_t i;
 
+				printf( "HANDSHAKE STATE\n" );
+
 			//Newer versions need not send this, maybe?
 			StartSend();
-			Sbyte( 0x23 );  //Updated (Join Game)
+			Sbyte( 0x26 );  //Updated (Join Game)
 			Sint( (uint8_t)(playerid + PLAYER_LOGIN_EID_BASE) );
 			Sbyte( GAMEMODE ); //creative
 			Sint( WORLDTYPE ); //overworld
-			Sbyte( 0 ); //peaceful
+			Slong( 0xdeadbeef ); //Hashed seed.
 			Sbyte( MAX_PLAYERS );
-			Sstring( "default", 7 );
+			Sstring( "default_1_1", 7+4 );
+			Svarint( 32 ); //render distance in chunks.
 			Sbyte( 0 ); //Reduce debug info?
+			Sbyte( 0 );	//Immediate respawn.
 			DoneSend();
 
 			p->need_to_spawn = 0;
@@ -652,46 +765,19 @@ void UpdateServer()
 			p->outcirctail = GetCurrentCircHead();
 		}
 
-		//Send the client a couple chunks to load on.
-		//Right now we just send a bunch of copy-and-pasted chunks.
-		if( p->next_chunk_to_load )
-		{
-//			p->custom_preload_step = 1;
-//			p->next_chunk_to_load = 0;
-
-			int pnc = p->next_chunk_to_load++;
-
-			if( pnc == 2 )
-			{
-				SendRawPGMData( compeddata, sizeof(compeddata) );
-			}
-
-			int chk = pnc - 3;
-			if( chk == 16 )
-			{
-				p->next_chunk_to_load = 0;
-				p->custom_preload_step = 1;
-			}
-			else
-			{
-				int k = 0;
-				for( k = 0; k < 16; k++ )
-					SblockInternal( k, 63, chk, 2, 0 );
-			}
-		}
 
 		//This is triggered when players want to actually join.
 		if( p->need_to_login )
 		{
 			StartSend();
-			Sbyte( 0x03 ); //Set compression threshold
-			Svarint( 1000 ); //Arbitrary, so we only hit it when we send chunks.
+			Sbyte( 0x03 ); //1.15.2 //Set compression threshold
+			Svarint( 8192 ); //Arbitrary, so we only hit it when we send chunks.
 			DoneSend();
 
 			p->set_compression = 1;
 
 			StartSend();
-			Sbyte( 0x02 ); //Login success
+			Sbyte( 0x02 ); //1.15.2 //Login success
 			Suuid( playerid + PLAYER_LOGIN_EID_BASE );
 			p->need_to_login = 0;
 			Sstring( (const char*)p->playername, -1 );
@@ -699,7 +785,6 @@ void UpdateServer()
 
 			//Do this, it is commented out for other reasons.
 			p->need_to_spawn = 1;
-
 		}
 
 
@@ -707,8 +792,8 @@ void UpdateServer()
 		{
 
 			StartSend();
-			Sbyte( 0x1f );
-			Svarint( dumbcraft_tick );
+			Sbyte( 0x21 );
+			Slong( dumbcraft_tick );
 			DoneSend();
 			p->need_to_send_keepalive = 0;
 		}
@@ -776,10 +861,10 @@ void TickServer()
 			int16_t diffx = p->x - p->ox;
 			int16_t diffy = p->y - p->oy;
 			int16_t diffz = p->z - p->oz;
-			if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
+			//if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
 			{
 				StartSend();
-				Sbyte( 0x49 );  //Updated (Teleport Entity)
+				Sbyte( 0x57 );  //1.15.2 (Entity Teleport)
 				Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 				Sdouble( p->x );
 				Sdouble( p->y );
@@ -789,7 +874,7 @@ void TickServer()
 				Sbyte( ONGROUND );
 				DoneSend();
 			}
-			else
+			/*else
 			{
 				StartSend();
 				Sbyte( 0x26 ); //Updated (Entity Look And Relative Move)
@@ -802,10 +887,10 @@ void TickServer()
 				Sbyte( ONGROUND );
 				DoneSend();
 				p->op = p->pitch; p->ow = p->yaw;
-			}
+			}*/
 
 			StartSend();
-			Sbyte( 0x34 ); //Updated (look at with head)
+			Sbyte( 0x3c ); //1.15.2 "Entity Head Look"
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
@@ -820,15 +905,18 @@ void TickServer()
 		{
 
 			StartSend();
+			/*
+			//XXX Was this dropped by 1.15.2
 			Sbyte( 0x27 ); //Entity Look
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			Sbyte( p->npitch );
 			Sbyte( ONGROUND );
 			DoneSend();
+			*/
 
 			StartSend();
-			Sbyte( 0x34 ); //Updated (look at with head)
+			Sbyte( 0x3C ); //1.15.2 (look at with head)
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
