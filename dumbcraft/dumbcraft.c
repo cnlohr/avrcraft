@@ -197,13 +197,22 @@ void Rposition( uint8_t * x, uint8_t * y, uint8_t * z )
 	dcrbyte();
 	dcrbyte();
 	*x = dcrbyte()<<2;
+	*x |= dcrbyte()>>6;
+	dcrbyte();
+	*z = dcrbyte()<<4;
+	*z = dcrbyte()>>4;
+	*y = dcrbyte();	
+
+/*	dcrbyte();
+	dcrbyte();
+	*x = dcrbyte()<<2;
 	uint8_t nr = dcrbyte();
 	*x |= nr>>6;
 	*y = nr<<6;
 	*y |= dcrbyte()>>2;
 	dcrbyte();
 	dcrbyte();
-	*z = dcrbyte();
+	*z = dcrbyte(); */
 }
 
 uint16_t Rvarint()
@@ -515,8 +524,10 @@ void UpdateServer()
 		//This is a very careful operation - we cannot interrupt it with another packet!!
 		if( p->next_chunk_to_load )
 		{
-			int pnc = p->next_chunk_to_load++;
-
+			int nnc = p->next_chunk_to_load;
+			int pnc = ++p->next_chunk_to_load_state;
+			int cx = (nnc-1) & 1;
+			int cz = (nnc-1) >> 1;
 			SendStart( playerid );
 			if( pnc == 1 )
 			{
@@ -526,15 +537,13 @@ void UpdateServer()
 					+ (1+25+36*8) /* heightmaps */ 
 					+ 1 + 1024*4 +
 					 1 /* varint, sizeof data in bytes */ + 1 /* varint sizeof array */;
-				int x = 0;
-				int z = 0;
 
 				extSbyte( 128 | (sendsize&127) );
 				extSbyte( sendsize >> 7 );
 				extSbyte( 0 );
 				LextSbyte( 0x22 );
-				LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( x );
-				LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( z );
+				LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( cx );
+				LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( cz );
 				LextSbyte( 1 ); //Full-chunk.
 				LextSbyte( 0x00 ); //Bitmap
 
@@ -544,8 +553,6 @@ void UpdateServer()
 				for( i = 0; i < 288; i++ ) LextSbyte( 0 ); //Heightmap (in longs)
 				LextSbyte( 0 );
 
-				
-
 				//XXX TODO HERE!!! PICK UP HERE!!! 
 				//1: Global palette!
 				//2: Why does client think chunk is unloaded?
@@ -553,7 +560,6 @@ void UpdateServer()
 				//SendRawPGMData( compeddata, sizeof(compeddata) );
 #define BLOCKS128  32
 #define BLOCKS128B  0
-				printf( "PNC 1: %d\n", pnc );
 			}
 			else if( pnc < (BLOCKS128+2))
 			{
@@ -590,7 +596,12 @@ void UpdateServer()
 					Svarint( 0 );
 					DoneSend();
 
-					p->next_chunk_to_load = 0;
+					int nnc = p->next_chunk_to_load;
+					//If you want to load more chunks, do it here.
+					if( nnc > 0 ) nnc = 0; else nnc++;
+
+					p->next_chunk_to_load = nnc;
+					p->next_chunk_to_load_state = 0;
 					p->custom_preload_step = 1;
 				}
 				else
@@ -599,7 +610,7 @@ void UpdateServer()
 					for( k = 0; k < 16; k++ )
 					{
 				//		if( k == 0 && chk == 0 )
-							SblockInternal( k, 63, chk, BLOCK_GRASS_ID );
+							SblockInternal( k+cx*16, 63, chk+cz*16, BLOCK_GRASS_ID );
 				//		else
 				//			SblockInternal( k, 63, chk, k + chk*16 + 3781 );
 					}
@@ -732,8 +743,6 @@ void UpdateServer()
 		{
 			uint8_t i;
 
-				printf( "HANDSHAKE STATE\n" );
-
 			//Newer versions need not send this, maybe?
 			StartSend();
 			Sbyte( 0x26 );  //Updated (Join Game)
@@ -743,7 +752,7 @@ void UpdateServer()
 			Slong( 0xdeadbeef ); //Hashed seed.
 			Sbyte( MAX_PLAYERS );
 			Sstring( "default_1_1", 7+4 );
-			Svarint( 32 ); //render distance in chunks.
+			Svarint( 8 ); //render distance in chunks.
 			Sbyte( 0 ); //Reduce debug info?
 			Sbyte( 0 );	//Immediate respawn.
 			DoneSend();
@@ -1099,7 +1108,7 @@ void GotData( uint8_t playerno )
 					chat[i8++] = dcrbyte();
 				}
 			}
-			chatlen++;
+			//chatlen++;
 			chat[i8] = 0;
 			break;
 
@@ -1151,21 +1160,21 @@ void GotData( uint8_t playerno )
 			uint8_t x, y, z;
 			Rposition( &x, &y, &z );
 			uint8_t face = Rvarint(); //which face?
-			printf( "%d %d %d  %d %d\n", x,y,z, hand, face );
 			//Ignore cursor xyz & insideblock
 			//Rvarint(); //action player is taking against block
-			PlayerClick( x, y, z, face );
+			//printf( "%d %d\n", hand, face );
+			if( hand == 0 ) PlayerClick( x, y, z, face );
 			break;
 		}
-//		case 0x2D: //1.15.2	//Block placement / right-click, used for levers.
-//		{
-//			uint8_t hand = Rvarint(); //action player is taking against block
-//			uint8_t x, y, z;
-//			Rposition( &x, &y, &z );
-//			uint8_t dir = dcrbyte();
-//			PlayerClick( x, y, z, dir );
-//			break;
-//		}
+		case 0x2D: //1.15.2	//Block placement / right-click, used for levers.
+		{
+			/*uint8_t hand =*/ Rvarint(); //action player is taking against block
+			uint8_t x, y, z;
+			Rposition( &x, &y, &z );
+			uint8_t dir = dcrbyte();
+			PlayerClick( x, y, z, dir );
+			break;
+		}
 #endif
 #ifdef NEED_SLOT_CHANGE
 		case 0x17:  //Held item change

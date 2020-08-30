@@ -264,7 +264,7 @@ int main()
 			lastticktime = tv.tv_usec;
 		}
 
-		usleep( 10000 );
+		usleep( 1000 );
 	}
 	return 0;
 }

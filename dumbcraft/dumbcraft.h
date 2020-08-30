@@ -10,7 +10,7 @@
 #define BLOCK_GRASS_ID 9
 #define BLOCK_WOOL_BASE_ID 1383
 #define BLOCK_LEVER_BASE_ID 3781
-#define BLOCK_OAK_SIGN_BASE_ID 3380
+#define BLOCK_OAK_SIGN_BASE_ID 3734
 
 #define PLAYER_EID_BASE 0x20
 #define PLAYER_LOGIN_EID_BASE 0x40
@@ -90,6 +90,7 @@ extern struct Player
 	uint8_t player_is_up_and_running:1;  //Sent after the custom preload is done.
 
 	uint8_t next_chunk_to_load;
+	uint8_t next_chunk_to_load_state;
 	uint8_t custom_preload_step; //if nonzero, then do pre-load, when done, set to 0 and set p->need_to_send_lookupdate = 1;
 
 	uint8_t need_to_respawn:1;
@@ -130,6 +131,7 @@ void DFDEC SbufferWide( const uint8_t * buf, uint8_t len );
 void DFDEC SbufferPGM( const uint8_t * buf, uint8_t len );
 void DFDEC SstringPGM( const char * str );
 void DFDEC Sdouble( int16_t i );
+void DFDEC Slong( uint32_t o );
 void DFDEC Sfloat( int16_t i );
 void DFDEC Suuid( uint16_t uuidid );
 void DFDEC SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );

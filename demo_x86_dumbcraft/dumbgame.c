@@ -76,7 +76,7 @@ void DoCustomPreloadStep( )
 
 	p->custom_preload_step = 0;
 
-//	SpawnEntity( 3, 58, 10*32, 64*32, 1*32 );
+	SpawnEntity( 3, 58, 10*32, 64*32, 1*32 );
 
 	//actually spawns
 	p->x = (1<<FIXEDPOINT)/2;
@@ -115,18 +115,23 @@ void PlayerChangeSlot( uint8_t slotno )
 
 void GameTick()
 {
-	return;
-
 	static int frame;
 	//Need to constantly send updates otherwise blocks won't change.
 	SblockInternal( 1, 96, 1, 0+((frame++)&1) );
 
 	if( didflip )
 	{
-		EntityUpdatePos( 3, rand()%512, 64*32, rand()%512, 0, 0 );
+		EntityUpdatePos( 3, rand()%512, 32*64, rand()%512, rand(), rand() );
+
 
 		StartSend();
-		Sbyte( 0x52 ); //1.5.2
+		Sbyte( 0x4F ); //1.5.2 Update day time.
+		Slong( 0 );
+		Slong( regaddr_get * 100 );
+		DoneSend();
+
+		StartSend();
+		Sbyte( 0x52 ); //1.5.2 Sound Effect
 		Svarint( 379 ); //Sound effect #
 		Svarint( 0 ); //Category #
 		Sint( (uint16_t)(flipx<<3) );

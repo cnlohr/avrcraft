@@ -36,17 +36,18 @@ void GPChat( const char * text )
 void SpawnEntity( uint16_t eid, uint8_t type, uint16_t x, uint16_t y, uint16_t z )
 {
 	StartSend();
-	Sbyte( 0x00 );  //1.15.2 Spawn Entity
+	Sbyte( 0x03 );  //1.15.2 Spawn Living Entity
 	Svarint( eid );
-//	Suuid( eid );
+	//Suuid( eid );
+	Slong( 0 ); Slong( eid );
+
 	Svarint( type );
 	Sdouble( x );
 	Sdouble( y );
 	Sdouble( z );
 	Sbyte( 0 );
 	Sbyte( 0 );
-//	Sbyte( 0 );
-	Sint( 0 ); //data
+	Sbyte( 0 ); //head pitch
 	Sshort( 0 );
 	Sshort( 0 );
 	Sshort( 0 );
@@ -56,18 +57,7 @@ void SpawnEntity( uint16_t eid, uint8_t type, uint16_t x, uint16_t y, uint16_t z
 void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z, uint8_t yaw, uint8_t pitch )
 {
 	StartSend();
-/*
-	Sbyte( 0x26 ); //UPDATED, MAYBE!
-	Svarint( entity );
-	Sshort( x );
-	Sshort( y );
-	Sshort( z );
-	Sfloat( yaw );
-	Sfloat( pitch );
-	Svarint( 1 ); //On ground
-	DoneSend();
-*/
-	Sbyte( 0x2A ); //1.15.2 Entity Position and Rotation
+	Sbyte( 0x57 ); //1.15.2 Entity Position and Rotation
 	Svarint( entity );
 	Sdouble( x );
 	Sdouble( y );
@@ -77,7 +67,6 @@ void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z, uint8
 	Svarint( 1 );
 	DoneSend();
 }
-
 
 //Update a sign at a specific location with a string and a numerical value.
 void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val )
