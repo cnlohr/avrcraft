@@ -485,9 +485,18 @@ void InitDumbcraft()
 {
 	memset( &Players, 0, sizeof( Players ) );
 #ifdef DEBUG_DUMBCRAFT
-	printf( "I: SOP: %u\n", sizeof( struct Player ) );
+	printf( "I: SOP: %d\n", sizeof( struct Player ) );
 #endif
 	InitDumbgame();
+}
+
+#include <stdio.h>
+void LextSbyte( char c )
+{
+	//FILE * f = fopen( "packetlog.dat", "ab" );
+	//fprintf( f, "%c", c );
+	//fclose( f );
+	extSbyte( c );
 }
 
 void UpdateServer()
@@ -509,36 +518,33 @@ void UpdateServer()
 			int pnc = p->next_chunk_to_load++;
 
 			SendStart( playerid );
-			printf( "PNC: %d\n", pnc );
 			if( pnc == 1 )
 			{
-				//StartSend();
-/*
-				Sbyte( 0x22 );
-				Sint( 0 ); //X
-				Sint( 0 ); //Z
-				Sbyte( 1 ); //Full chunk
+				//SUPER BIG THANKS TO <x10A94> FOR HELPING ME UNDERSTAND THIS.
 
-//				Svarint( 0 ); //No chunks?
-//				Sbyte( 0 );	//TODO NBT Heightmap
-//				Svarint( 0 );
-//				Svarint( 0 );
-//				DoneSend();
-	*/
-				int sendsize = 1 + 1 + 4 + 4 + 1 /* varint, bitmask */ + 1 /* NBT */ + 1 + 1024*4 +
-					 2 /* varint, sizeof data in bytes */ + 1 /* varint sizeof array */;
+				int sendsize = 1 + 1 + 4 + 4 + 1 /* varint, bitmask */ 
+					+ (1+25+36*8) /* heightmaps */ 
+					+ 1 + 1024*4 +
+					 1 /* varint, sizeof data in bytes */ + 1 /* varint sizeof array */;
 				int x = 0;
 				int z = 0;
 
 				extSbyte( 128 | (sendsize&127) );
 				extSbyte( sendsize >> 7 );
 				extSbyte( 0 );
-				extSbyte( 0x22 );
-				extSbyte( 0 ); extSbyte( 0 ); extSbyte( 0 ); extSbyte( x );
-				extSbyte( 0 ); extSbyte( 0 ); extSbyte( 0 ); extSbyte( z );
-				extSbyte( 1 ); //Full-chunk.
-				extSbyte( 0x7F ); //Bitmap
-				extSbyte( 0 );	//Heightmaps
+				LextSbyte( 0x22 );
+				LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( x );
+				LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( z );
+				LextSbyte( 1 ); //Full-chunk.
+				LextSbyte( 0x00 ); //Bitmap
+
+				const char * heightmapblob = "\x0A\0\0\x0C\0\x0fMOTION_BLOCKING\0\0\0\x24";
+				int i;
+				for( i = 0; i < 25; i++ ) LextSbyte( heightmapblob[i] );
+				for( i = 0; i < 288; i++ ) LextSbyte( 0 ); //Heightmap (in longs)
+				LextSbyte( 0 );
+
+				
 
 				//XXX TODO HERE!!! PICK UP HERE!!! 
 				//1: Global palette!
@@ -547,32 +553,30 @@ void UpdateServer()
 				//SendRawPGMData( compeddata, sizeof(compeddata) );
 #define BLOCKS128  32
 #define BLOCKS128B  0
+				printf( "PNC 1: %d\n", pnc );
 			}
 			else if( pnc < (BLOCKS128+2))
 			{
 				int i;
-				for( i = 0; i < 1024/32*4; i++ )
-					extSbyte( 0 );
+				for( i = 0; i < 1024/32; i++ )
+				{
+					LextSbyte( 0 );
+					LextSbyte( 0 );
+					LextSbyte( 0 );
+					LextSbyte( 0x7f );
+				}
 				//2..65
-				printf( "SENDING %d\n", 1024/32*4 );
 			}
 			else if( pnc < (BLOCKS128+3) )
 			{
-				//34
-				//extSbyte( 0 ); //Size of Data in bytes  
-
-				int sendsize = 0;
-				extSbyte( 128 | (sendsize&127) );
-				extSbyte( sendsize >> 7 );
-
-				printf( "Ending\n" );
+				LextSbyte( 0 );
 			}
 			else if( pnc < (BLOCKS128B+BLOCKS128+3) )
 			{
 			}
 			else if( pnc < (BLOCKS128B+BLOCKS128+4) )
 			{
-				extSbyte( 0 ); //Block entities 
+				LextSbyte( 0 ); //Block entities 
 			}
 			else
 			{
@@ -593,7 +597,12 @@ void UpdateServer()
 				{
 					int k = 0;
 					for( k = 0; k < 16; k++ )
-						SblockInternal( k, 63, chk, 2, 0 );
+					{
+				//		if( k == 0 && chk == 0 )
+							SblockInternal( k, 63, chk, BLOCK_GRASS_ID );
+				//		else
+				//			SblockInternal( k, 63, chk, k + chk*16 + 3781 );
+					}
 				}
 			}
 
@@ -858,9 +867,9 @@ void TickServer()
 
 		if( p->x != p->ox || p->y != p->oy || p->stance != p->os || p->z != p->oz )
 		{
-			int16_t diffx = p->x - p->ox;
-			int16_t diffy = p->y - p->oy;
-			int16_t diffz = p->z - p->oz;
+			//int16_t diffx = p->x - p->ox;
+			//int16_t diffy = p->y - p->oy;
+			//int16_t diffz = p->z - p->oz;
 			//if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
 			{
 				StartSend();
@@ -1065,18 +1074,18 @@ void GotData( uint8_t playerno )
 		{
 		case 0x00: //Teleport confirm (ignore)
 			break;
-		case 0x1A: //Animation for hand waving or other stuff.  (TODO)
-			break;
-		case 0x14: //Entity Action
-			break;
-		case 0x0B:
+		//case 0x1A: //Animation for hand waving or other stuff.  (TODO)
+		//	break;
+		//case 0x14: //Entity Action
+		//	break;
+		case 0x0F: //1.15.2 //Keepalive
 			//p->need_to_send_keepalive = 1;
 			Rshort();
 			//keep alive?
 			//p->keepalive_id = Rint();
 			break;
 
-		case 0x02: //Handle chat
+		case 0x03: //1.15.2 Handle chat
 			i16 = Rvarint();
 
 			chatlen = ((i16)<MAX_CHATLEN)?i16:MAX_CHATLEN;
@@ -1094,11 +1103,11 @@ void GotData( uint8_t playerno )
 			chat[i8] = 0;
 			break;
 
-		case 0x0f: //On-ground, client sends this to an annyoing degree.
+		case 0x14: //1.15.2 Player Movement //On-ground, client sends this to an annyoing degree.
 			p->onground = dcrbyte();
 			break;
 
-		case 0x0C: //Player position
+		case 0x11: //1.15.2 Player position
 			p->x = Rdouble();
 			p->y = Rdouble();
 			//p->stance = Rdouble();
@@ -1106,19 +1115,19 @@ void GotData( uint8_t playerno )
 			p->onground = dcrbyte();
 			break;
 
-		case 0x0D: //Player Position and look
+		case 0x12: //1.15.2 //Player Position
 			p->x = Rdouble();
 			p->y = Rdouble();
 			//p->stance = Rdouble();
 			p->z = Rdouble();
-		case 0x0E: //Player look, only.
+		case 0x13: //1.15.2  Player Rotation
 			p->yaw = Rfloat();
 			p->pitch = Rfloat();
 			p->nyaw = p->yaw/45;    //XXX TODO PROBABLY SLOW seems to add <256 bytes, though.  Is there a better way?
 			p->npitch = p->pitch/45;//XXX TODO PROBABLY SLOW
 			p->onground = dcrbyte();
 			break;
-		case 0x13: //player digging.
+		case 0x1A: //1.15.2 player digging.
 		{
 			uint8_t status = Rvarint(); //action player is taking against block
 			uint8_t x, y, z;
@@ -1131,31 +1140,39 @@ void GotData( uint8_t playerno )
 #endif
 			break;
 		}
+		//case 0x2A:
+		//{
+		//	Players arms swinging.
+		//}
 #ifdef NEED_PLAYER_CLICK
-		case 0x1C: //placing block or clicking
+		case 0x2C: //1.15.2 //Player Block Placement
 		{
+			uint8_t hand = Rvarint(); //action player is taking against block
 			uint8_t x, y, z;
 			Rposition( &x, &y, &z );
 			uint8_t face = Rvarint(); //which face?
-			Rvarint(); //action player is taking against block
+			printf( "%d %d %d  %d %d\n", x,y,z, hand, face );
+			//Ignore cursor xyz & insideblock
+			//Rvarint(); //action player is taking against block
 			PlayerClick( x, y, z, face );
 			break;
 		}
-		case 0x0A:	//Block placement / right-click, used for levers.
-		{
-			uint8_t x, y, z;
-			Rposition( &x, &y, &z );
-			uint8_t dir = dcrbyte();
-			PlayerClick( x, y, z, dir );
-			break;
-		}
+//		case 0x2D: //1.15.2	//Block placement / right-click, used for levers.
+//		{
+//			uint8_t hand = Rvarint(); //action player is taking against block
+//			uint8_t x, y, z;
+//			Rposition( &x, &y, &z );
+//			uint8_t dir = dcrbyte();
+//			PlayerClick( x, y, z, dir );
+//			break;
+//		}
 #endif
 #ifdef NEED_SLOT_CHANGE
 		case 0x17:  //Held item change
 			PlayerChangeSlot( Rshort() );
 			break;
 #endif
-		case 0x03:  //Client Status
+		case 0x04:  //1.15.2 Client Status
 			switch( dcrbyte() )
 			{
 			case 0x00: //perform respawn.
@@ -1167,7 +1184,7 @@ void GotData( uint8_t playerno )
 			}
 			break;
 
-		case 0x09://plugin message
+		case 0x0B://1.15.2 plugin message
 			Rstring( 0,0 );
 			Rdump( Rshort() );
 			break;

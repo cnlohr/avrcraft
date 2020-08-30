@@ -7,6 +7,11 @@
 #define PROTO_VERSION_STR "578"
 #define LONG_PROTO_VERSION "1.15.2"
 
+#define BLOCK_GRASS_ID 9
+#define BLOCK_WOOL_BASE_ID 1383
+#define BLOCK_LEVER_BASE_ID 3781
+#define BLOCK_OAK_SIGN_BASE_ID 3380
+
 #define PLAYER_EID_BASE 0x20
 #define PLAYER_LOGIN_EID_BASE 0x40
 #define MAX_CHATLEN 100
@@ -128,7 +133,7 @@ void DFDEC Sdouble( int16_t i );
 void DFDEC Sfloat( int16_t i );
 void DFDEC Suuid( uint16_t uuidid );
 void DFDEC SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
-void DFDEC SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta );
+void DFDEC SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint16_t blockid );
 void DFDEC SSpawnPlayer( uint8_t pid );
 void DFDEC UpdatePlayerSpeed( uint8_t speed );
 
