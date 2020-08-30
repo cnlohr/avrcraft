@@ -14,7 +14,7 @@
 
 //Overworld = 0
 #define WORLDTYPE 0
-#define GAMEMODE  1
+#define GAMEMODE  0 //1 = creative
 
 #define RUNSPEED 5
 #define WALKSPEED 3

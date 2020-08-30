@@ -65,14 +65,9 @@ void DoCustomPreloadStep( )
 //	SblockInternal( 16, 64, 16, 89 + 0 );
 
 	SblockInternal( 3, 64, 2, BLOCK_OAK_SIGN_BASE_ID ); //create sign
-
 	SignTextUp( 3, 64, 2, "Trigger", "<><" );
-
 	SblockInternal( 3, 64, 1, BLOCK_OAK_SIGN_BASE_ID ); //create sign
-
-	StartSend();
 	SignTextUp( 3, 64, 1, "Latch", "<><" );
-
 
 	p->custom_preload_step = 0;
 

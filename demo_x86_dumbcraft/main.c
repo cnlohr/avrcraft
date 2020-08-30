@@ -71,12 +71,24 @@ uint8_t UnloadCircularBufferOnThisClient( uint16_t * whence )
 		return 0;
 }
 
+int maxsock = 0;
+
 void SendData( uint8_t playerno, unsigned char * data, uint16_t packetsize )
 {
 	int sock = playersockets[playerno];
 	int r;
 	if( sock >= 0 )
 	{
+		if( packetsize >= 460 )
+		{
+			printf( "WARNING: Big packet! %d\n", packetsize );
+			int i;
+			for( i = 0 ; i < packetsize; i++ )
+			{
+				printf( "%02x%c", data[i], ((i+1)&0x1f)?' ':'\n' );
+			}
+			printf( "\n" );
+		}
 		r = send( sock, data, packetsize, MSG_NOSIGNAL );
 		if( r != packetsize )
 		{
@@ -264,7 +276,7 @@ int main()
 			lastticktime = tv.tv_usec;
 		}
 
-		usleep( 100 );
+		usleep( 1000 );
 	}
 	return 0;
 }

@@ -526,8 +526,11 @@ void UpdateServer()
 		{
 			int nnc = p->next_chunk_to_load;
 			int pnc = ++p->next_chunk_to_load_state;
-			int cx = (nnc-1) & 1;
-			int cz = (nnc-1) >> 1;
+			
+			int cx = (nnc-1) & ((1<<CHUNKS_TO_LOAD_XPROFILE)-1);
+			int cz = (nnc-1) >> CHUNKS_TO_LOAD_XPROFILE;
+			cx -= 1;
+			cz -= 1;
 			SendStart( playerid );
 			if( pnc == 1 )
 			{
@@ -542,8 +545,10 @@ void UpdateServer()
 				extSbyte( sendsize >> 7 );
 				extSbyte( 0 );
 				LextSbyte( 0x22 );
-				LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( cx );
-				LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( 0 ); LextSbyte( cz );
+				uint8_t ch = (cx<0)?0xff:0x00;
+				LextSbyte( ch ); LextSbyte( ch ); LextSbyte( ch ); LextSbyte( cx );
+				ch = (cz<0)?0xff:0x00;
+				LextSbyte( ch ); LextSbyte( ch ); LextSbyte( ch ); LextSbyte( cz );
 				LextSbyte( 1 ); //Full-chunk.
 				LextSbyte( 0x00 ); //Bitmap
 
@@ -558,13 +563,13 @@ void UpdateServer()
 				//2: Why does client think chunk is unloaded?
 
 				//SendRawPGMData( compeddata, sizeof(compeddata) );
-#define BLOCKS128  32
-#define BLOCKS128B  0
+#define BLOCKS256  16
+#define BLOCKS256B  0
 			}
-			else if( pnc < (BLOCKS128+2))
+			else if( pnc < (BLOCKS256+2))
 			{
 				int i;
-				for( i = 0; i < 1024/32; i++ )
+				for( i = 0; i < 1024/BLOCKS256; i++ )
 				{
 					LextSbyte( 0 );
 					LextSbyte( 0 );
@@ -573,32 +578,26 @@ void UpdateServer()
 				}
 				//2..65
 			}
-			else if( pnc < (BLOCKS128+3) )
+			else if( pnc < (BLOCKS256+3) )
 			{
 				LextSbyte( 0 );
-			}
-			else if( pnc < (BLOCKS128B+BLOCKS128+3) )
-			{
-			}
-			else if( pnc < (BLOCKS128B+BLOCKS128+4) )
-			{
 				LextSbyte( 0 ); //Block entities 
 			}
 			else
 			{
 				//35+
-				int chk = pnc - (BLOCKS128B+BLOCKS128+4);
-				if( chk == 16 )
+				int chk = pnc - (BLOCKS256+3);
+				if( chk == 16 || cx < 0 || cz < 0 )
 				{
-					StartSend();
-					Sbyte( 0x41 ); //1.15.2 Update View Position --> TODO: Needed whenever crossing block boundaries
-					Svarint( 0 );
-					Svarint( 0 );
-					DoneSend();
+					//StartSend();
+					//Sbyte( 0x41 ); //1.15.2 Update View Position --> TODO: Needed whenever crossing block boundaries
+					//Svarint( 0 );
+					//Svarint( 0 );
+					//DoneSend();
 
 					int nnc = p->next_chunk_to_load;
 					//If you want to load more chunks, do it here.
-					if( nnc > 0 ) nnc = 0; else nnc++;
+					if( nnc >= CHUNKS_TO_LOAD ) nnc = 0; else nnc++;
 
 					p->next_chunk_to_load = nnc;
 					p->next_chunk_to_load_state = 0;
@@ -609,10 +608,8 @@ void UpdateServer()
 					int k = 0;
 					for( k = 0; k < 16; k++ )
 					{
-				//		if( k == 0 && chk == 0 )
-							SblockInternal( k+cx*16, 63, chk+cz*16, BLOCK_GRASS_ID );
-				//		else
-				//			SblockInternal( k, 63, chk, k + chk*16 + 3781 );
+//						SblockInternal( k+cx*16, 128, chk+cz*16, 230 ); //Put glass at Y=128 fixes the client if you are going to be doing a lot of updates.
+						SblockInternal( k+cx*16, 63, chk+cz*16, BLOCK_GRASS_ID );
 					}
 				}
 			}
@@ -751,7 +748,7 @@ void UpdateServer()
 			Sint( WORLDTYPE ); //overworld
 			Slong( 0xdeadbeef ); //Hashed seed.
 			Sbyte( MAX_PLAYERS );
-			Sstring( "default_1_1", 7+4 );
+			Sstring( "flat", 4 );
 			Svarint( 8 ); //render distance in chunks.
 			Sbyte( 0 ); //Reduce debug info?
 			Sbyte( 0 );	//Immediate respawn.
