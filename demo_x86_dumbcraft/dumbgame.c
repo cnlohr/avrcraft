@@ -116,8 +116,7 @@ void PlayerChangeSlot( uint8_t slotno )
 void GameTick()
 {
 	static int frame;
-	//Need to constantly send updates otherwise blocks won't change.
-	SblockInternal( 1, 96, 1, 0+((frame++)&1) );
+	frame++;
 
 	if( didflip )
 	{

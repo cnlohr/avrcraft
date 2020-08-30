@@ -8,9 +8,13 @@
 
 #define MAX_PLAYER_NAME 17
 
+#define CHUNKS_TO_LOAD 64
+#define CHUNKS_TO_LOAD_XPROFILE 3 //Number of "bits" "2" = 4 chunks profile.
+
+
 //Overworld = 0
 #define WORLDTYPE 0
-#define GAMEMODE  0
+#define GAMEMODE  1
 
 #define RUNSPEED 5
 #define WALKSPEED 3
