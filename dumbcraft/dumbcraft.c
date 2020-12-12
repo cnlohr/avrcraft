@@ -197,13 +197,22 @@ void Rposition( uint8_t * x, uint8_t * y, uint8_t * z )
 	dcrbyte();
 	dcrbyte();
 	*x = dcrbyte()<<2;
+	*x |= dcrbyte()>>6;
+	dcrbyte();
+	*z = dcrbyte()<<4;
+	*z = dcrbyte()>>4;
+	*y = dcrbyte();	
+
+/*	dcrbyte();
+	dcrbyte();
+	*x = dcrbyte()<<2;
 	uint8_t nr = dcrbyte();
 	*x |= nr>>6;
 	*y = nr<<6;
 	*y |= dcrbyte()>>2;
 	dcrbyte();
 	dcrbyte();
-	*z = dcrbyte();
+	*z = dcrbyte(); */
 }
 
 uint16_t Rvarint()
@@ -292,6 +301,11 @@ void Sint( uint32_t o )
 	Sbyte( o );
 }
 
+void Slong( uint32_t o )
+{
+	Sint( 0 );
+	Sint( o );
+}
 void Sshort( uint16_t o )
 {
 	Sbyte( o >> 8 );
@@ -389,22 +403,24 @@ void SSpawnPlayer( uint8_t pid )
 #if 1
 	//printf( "Spawn Player: %d %s\n", pid+PLAYER_EID_BASE, p->playername ); //XXX TODO This does not seem to be called correctly.
 
+	//Player Info
 	StartSend();
-	Sbyte( 0x2D );
+	Sbyte( 0x34 ); //1.15.2
 	Svarint( 0 ); //Add player
 	Svarint( 1 ); //1 player
-	Sint( pid + PLAYER_EID_BASE );	Sint( 0 );	Sint( 0 );	Sint( 0 );
+	Svarint( (uint8_t)(pid + PLAYER_EID_BASE) );
+//	Suuid( pid + PLAYER_EID_BASE );
 	Sstring( (char*)p->playername, -1 );
 	Svarint( 0 ); //No props
 	Svarint( GAMEMODE ); //Game mode
 	Svarint( 0 ); //Ping
-	Sbyte( 0 );
+	Sbyte( 0 ); //Has display name
 	DoneSend();
 
 	StartSend();
-	Sbyte( 0x05 );  //[UPDATED]
-	Svarint( pid + PLAYER_EID_BASE );
-	Sint( pid + PLAYER_EID_BASE );	Sint( 0 );	Sint( 0 );	Sint( 0 );  //UUID
+	Sbyte( 0x57 );  //1.15.2 Entity teleport
+	//Suuid( pid + PLAYER_EID_BASE );
+	Svarint( (uint8_t)(pid + PLAYER_EID_BASE) );
 	Sdouble( p->x );
 	Sdouble( p->y );
 	Sdouble( p->z );
@@ -422,7 +438,7 @@ void SSpawnPlayer( uint8_t pid )
 void UpdatePlayerSpeed( uint8_t speed )
 {
 	StartSend();
-	Sbyte(0x4a); //[UPDATED]
+	Sbyte(0x59); //[1.15.2]
 	Svarint( playerid );
 	Sint( 1 );
 	Sstring( "generic.movementSpeed", -1 );	
@@ -478,9 +494,18 @@ void InitDumbcraft()
 {
 	memset( &Players, 0, sizeof( Players ) );
 #ifdef DEBUG_DUMBCRAFT
-	printf( "I: SOP: %u\n", sizeof( struct Player ) );
+	printf( "I: SOP: %d\n", sizeof( struct Player ) );
 #endif
 	InitDumbgame();
+}
+
+#include <stdio.h>
+void LextSbyte( char c )
+{
+	//FILE * f = fopen( "packetlog.dat", "ab" );
+	//fprintf( f, "%c", c );
+	//fclose( f );
+	extSbyte( c );
 }
 
 void UpdateServer()
@@ -493,6 +518,107 @@ void UpdateServer()
 		if( p->active ) localplayercount++;
 
 		if( !p->active || !CanSend( playerid ) ) continue;
+
+		//Send the client a couple chunks to load on. 
+		//this happens after Updated (Join Game)
+		//This is a very careful operation - we cannot interrupt it with another packet!!
+		if( p->next_chunk_to_load )
+		{
+			int nnc = p->next_chunk_to_load;
+			int pnc = ++p->next_chunk_to_load_state;
+			
+			int cx = (nnc-1) & ((1<<CHUNKS_TO_LOAD_XPROFILE)-1);
+			int cz = (nnc-1) >> CHUNKS_TO_LOAD_XPROFILE;
+			cx -= 1;
+			cz -= 1;
+			SendStart( playerid );
+			if( pnc == 1 )
+			{
+				//SUPER BIG THANKS TO <x10A94> FOR HELPING ME UNDERSTAND THIS.
+
+				int sendsize = 1 + 1 + 4 + 4 + 1 /* varint, bitmask */ 
+					+ (1+25+36*8) /* heightmaps */ 
+					+ 1 + 1024*4 +
+					 1 /* varint, sizeof data in bytes */ + 1 /* varint sizeof array */;
+
+				extSbyte( 128 | (sendsize&127) );
+				extSbyte( sendsize >> 7 );
+				extSbyte( 0 );
+				LextSbyte( 0x22 );
+				uint8_t ch = (cx<0)?0xff:0x00;
+				LextSbyte( ch ); LextSbyte( ch ); LextSbyte( ch ); LextSbyte( cx );
+				ch = (cz<0)?0xff:0x00;
+				LextSbyte( ch ); LextSbyte( ch ); LextSbyte( ch ); LextSbyte( cz );
+				LextSbyte( 1 ); //Full-chunk.
+				LextSbyte( 0x00 ); //Bitmap
+
+				const char * heightmapblob = "\x0A\0\0\x0C\0\x0fMOTION_BLOCKING\0\0\0\x24";
+				int i;
+				for( i = 0; i < 25; i++ ) LextSbyte( heightmapblob[i] );
+				for( i = 0; i < 288; i++ ) LextSbyte( 0 ); //Heightmap (in longs)
+				LextSbyte( 0 );
+
+				//XXX TODO HERE!!! PICK UP HERE!!! 
+				//1: Global palette!
+				//2: Why does client think chunk is unloaded?
+
+				//SendRawPGMData( compeddata, sizeof(compeddata) );
+#define BLOCKS256  16
+#define BLOCKS256B  0
+			}
+			else if( pnc < (BLOCKS256+2))
+			{
+				int i;
+				for( i = 0; i < 1024/BLOCKS256; i++ )
+				{
+					LextSbyte( 0 );
+					LextSbyte( 0 );
+					LextSbyte( 0 );
+					LextSbyte( 0x7f );
+				}
+				//2..65
+			}
+			else if( pnc < (BLOCKS256+3) )
+			{
+				LextSbyte( 0 );
+				LextSbyte( 0 ); //Block entities 
+			}
+			else
+			{
+				//35+
+				int chk = pnc - (BLOCKS256+3);
+				if( chk == 16 || cx < 0 || cz < 0 )
+				{
+					//StartSend();
+					//Sbyte( 0x41 ); //1.15.2 Update View Position --> TODO: Needed whenever crossing block boundaries
+					//Svarint( 0 );
+					//Svarint( 0 );
+					//DoneSend();
+
+					int nnc = p->next_chunk_to_load;
+					//If you want to load more chunks, do it here.
+					if( nnc >= CHUNKS_TO_LOAD ) nnc = 0; else nnc++;
+
+					p->next_chunk_to_load = nnc;
+					p->next_chunk_to_load_state = 0;
+					p->custom_preload_step = 1;
+				}
+				else
+				{
+					int k = 0;
+					for( k = 0; k < 16; k++ )
+					{
+//						SblockInternal( k+cx*16, 128, chk+cz*16, 230 ); //Put glass at Y=128 fixes the client if you are going to be doing a lot of updates.
+						SblockInternal( k+cx*16, 63, chk+cz*16, BLOCK_GRASS_ID );
+					}
+				}
+			}
+
+			EndSend();
+			continue;
+		}
+
+
 
 		p->update_number++;
 		SendStart( playerid );
@@ -596,14 +722,14 @@ void UpdateServer()
 		if( p->need_to_send_lookupdate )
 		{
 			StartSend();
-			Sbyte(0x2E); //updated
+			Sbyte(0x36); //1.15.2 //Player Position And Look (clientbound)
 			Sdouble( p->x );
 			Sdouble( p->y );
 			Sdouble( p->z );
 			Sfloat( p->yaw );
 			Sfloat( p->pitch );
 			Sbyte(0x00); //xyz absolute
-			Svarint( 0 );
+			Svarint( 0 );	//Teleport ID
 			DoneSend();
 
 			p->need_to_send_lookupdate = 0;
@@ -616,14 +742,16 @@ void UpdateServer()
 
 			//Newer versions need not send this, maybe?
 			StartSend();
-			Sbyte( 0x23 );  //Updated (Join Game)
+			Sbyte( 0x26 );  //Updated (Join Game)
 			Sint( (uint8_t)(playerid + PLAYER_LOGIN_EID_BASE) );
 			Sbyte( GAMEMODE ); //creative
 			Sint( WORLDTYPE ); //overworld
-			Sbyte( 0 ); //peaceful
+			Slong( 0xdeadbeef ); //Hashed seed.
 			Sbyte( MAX_PLAYERS );
-			Sstring( "default", 7 );
+			Sstring( "flat", 4 );
+			Svarint( 8 ); //render distance in chunks.
 			Sbyte( 0 ); //Reduce debug info?
+			Sbyte( 0 );	//Immediate respawn.
 			DoneSend();
 
 			p->need_to_spawn = 0;
@@ -652,46 +780,19 @@ void UpdateServer()
 			p->outcirctail = GetCurrentCircHead();
 		}
 
-		//Send the client a couple chunks to load on.
-		//Right now we just send a bunch of copy-and-pasted chunks.
-		if( p->next_chunk_to_load )
-		{
-//			p->custom_preload_step = 1;
-//			p->next_chunk_to_load = 0;
-
-			int pnc = p->next_chunk_to_load++;
-
-			if( pnc == 2 )
-			{
-				SendRawPGMData( compeddata, sizeof(compeddata) );
-			}
-
-			int chk = pnc - 3;
-			if( chk == 16 )
-			{
-				p->next_chunk_to_load = 0;
-				p->custom_preload_step = 1;
-			}
-			else
-			{
-				int k = 0;
-				for( k = 0; k < 16; k++ )
-					SblockInternal( k, 63, chk, 2, 0 );
-			}
-		}
 
 		//This is triggered when players want to actually join.
 		if( p->need_to_login )
 		{
 			StartSend();
-			Sbyte( 0x03 ); //Set compression threshold
-			Svarint( 1000 ); //Arbitrary, so we only hit it when we send chunks.
+			Sbyte( 0x03 ); //1.15.2 //Set compression threshold
+			Svarint( 8192 ); //Arbitrary, so we only hit it when we send chunks.
 			DoneSend();
 
 			p->set_compression = 1;
 
 			StartSend();
-			Sbyte( 0x02 ); //Login success
+			Sbyte( 0x02 ); //1.15.2 //Login success
 			Suuid( playerid + PLAYER_LOGIN_EID_BASE );
 			p->need_to_login = 0;
 			Sstring( (const char*)p->playername, -1 );
@@ -699,7 +800,6 @@ void UpdateServer()
 
 			//Do this, it is commented out for other reasons.
 			p->need_to_spawn = 1;
-
 		}
 
 
@@ -707,8 +807,8 @@ void UpdateServer()
 		{
 
 			StartSend();
-			Sbyte( 0x1f );
-			Svarint( dumbcraft_tick );
+			Sbyte( 0x21 );
+			Slong( dumbcraft_tick );
 			DoneSend();
 			p->need_to_send_keepalive = 0;
 		}
@@ -773,13 +873,13 @@ void TickServer()
 
 		if( p->x != p->ox || p->y != p->oy || p->stance != p->os || p->z != p->oz )
 		{
-			int16_t diffx = p->x - p->ox;
-			int16_t diffy = p->y - p->oy;
-			int16_t diffz = p->z - p->oz;
-			if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
+			//int16_t diffx = p->x - p->ox;
+			//int16_t diffy = p->y - p->oy;
+			//int16_t diffz = p->z - p->oz;
+			//if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
 			{
 				StartSend();
-				Sbyte( 0x49 );  //Updated (Teleport Entity)
+				Sbyte( 0x57 );  //1.15.2 (Entity Teleport)
 				Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 				Sdouble( p->x );
 				Sdouble( p->y );
@@ -789,7 +889,7 @@ void TickServer()
 				Sbyte( ONGROUND );
 				DoneSend();
 			}
-			else
+			/*else
 			{
 				StartSend();
 				Sbyte( 0x26 ); //Updated (Entity Look And Relative Move)
@@ -802,10 +902,10 @@ void TickServer()
 				Sbyte( ONGROUND );
 				DoneSend();
 				p->op = p->pitch; p->ow = p->yaw;
-			}
+			}*/
 
 			StartSend();
-			Sbyte( 0x34 ); //Updated (look at with head)
+			Sbyte( 0x3c ); //1.15.2 "Entity Head Look"
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
@@ -820,15 +920,18 @@ void TickServer()
 		{
 
 			StartSend();
+			/*
+			//XXX Was this dropped by 1.15.2
 			Sbyte( 0x27 ); //Entity Look
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			Sbyte( p->npitch );
 			Sbyte( ONGROUND );
 			DoneSend();
+			*/
 
 			StartSend();
-			Sbyte( 0x34 ); //Updated (look at with head)
+			Sbyte( 0x3C ); //1.15.2 (look at with head)
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
@@ -977,18 +1080,18 @@ void GotData( uint8_t playerno )
 		{
 		case 0x00: //Teleport confirm (ignore)
 			break;
-		case 0x1A: //Animation for hand waving or other stuff.  (TODO)
-			break;
-		case 0x14: //Entity Action
-			break;
-		case 0x0B:
+		//case 0x1A: //Animation for hand waving or other stuff.  (TODO)
+		//	break;
+		//case 0x14: //Entity Action
+		//	break;
+		case 0x0F: //1.15.2 //Keepalive
 			//p->need_to_send_keepalive = 1;
 			Rshort();
 			//keep alive?
 			//p->keepalive_id = Rint();
 			break;
 
-		case 0x02: //Handle chat
+		case 0x03: //1.15.2 Handle chat
 			i16 = Rvarint();
 
 			chatlen = ((i16)<MAX_CHATLEN)?i16:MAX_CHATLEN;
@@ -1002,15 +1105,15 @@ void GotData( uint8_t playerno )
 					chat[i8++] = dcrbyte();
 				}
 			}
-			chatlen++;
+			//chatlen++;
 			chat[i8] = 0;
 			break;
 
-		case 0x0f: //On-ground, client sends this to an annyoing degree.
+		case 0x14: //1.15.2 Player Movement //On-ground, client sends this to an annyoing degree.
 			p->onground = dcrbyte();
 			break;
 
-		case 0x0C: //Player position
+		case 0x11: //1.15.2 Player position
 			p->x = Rdouble();
 			p->y = Rdouble();
 			//p->stance = Rdouble();
@@ -1018,19 +1121,19 @@ void GotData( uint8_t playerno )
 			p->onground = dcrbyte();
 			break;
 
-		case 0x0D: //Player Position and look
+		case 0x12: //1.15.2 //Player Position
 			p->x = Rdouble();
 			p->y = Rdouble();
 			//p->stance = Rdouble();
 			p->z = Rdouble();
-		case 0x0E: //Player look, only.
+		case 0x13: //1.15.2  Player Rotation
 			p->yaw = Rfloat();
 			p->pitch = Rfloat();
 			p->nyaw = p->yaw/45;    //XXX TODO PROBABLY SLOW seems to add <256 bytes, though.  Is there a better way?
 			p->npitch = p->pitch/45;//XXX TODO PROBABLY SLOW
 			p->onground = dcrbyte();
 			break;
-		case 0x13: //player digging.
+		case 0x1A: //1.15.2 player digging.
 		{
 			uint8_t status = Rvarint(); //action player is taking against block
 			uint8_t x, y, z;
@@ -1043,18 +1146,26 @@ void GotData( uint8_t playerno )
 #endif
 			break;
 		}
+		//case 0x2A:
+		//{
+		//	Players arms swinging.
+		//}
 #ifdef NEED_PLAYER_CLICK
-		case 0x1C: //placing block or clicking
+		case 0x2C: //1.15.2 //Player Block Placement
 		{
+			uint8_t hand = Rvarint(); //action player is taking against block
 			uint8_t x, y, z;
 			Rposition( &x, &y, &z );
 			uint8_t face = Rvarint(); //which face?
-			Rvarint(); //action player is taking against block
-			PlayerClick( x, y, z, face );
+			//Ignore cursor xyz & insideblock
+			//Rvarint(); //action player is taking against block
+			//printf( "%d %d\n", hand, face );
+			if( hand == 0 ) PlayerClick( x, y, z, face );
 			break;
 		}
-		case 0x0A:	//Block placement / right-click, used for levers.
+		case 0x2D: //1.15.2	//Block placement / right-click, used for levers.
 		{
+			/*uint8_t hand =*/ Rvarint(); //action player is taking against block
 			uint8_t x, y, z;
 			Rposition( &x, &y, &z );
 			uint8_t dir = dcrbyte();
@@ -1067,7 +1178,7 @@ void GotData( uint8_t playerno )
 			PlayerChangeSlot( Rshort() );
 			break;
 #endif
-		case 0x03:  //Client Status
+		case 0x04:  //1.15.2 Client Status
 			switch( dcrbyte() )
 			{
 			case 0x00: //perform respawn.
@@ -1079,7 +1190,7 @@ void GotData( uint8_t playerno )
 			}
 			break;
 
-		case 0x09://plugin message
+		case 0x0B://1.15.2 plugin message
 			Rstring( 0,0 );
 			Rdump( Rshort() );
 			break;

@@ -14,7 +14,7 @@ void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
 void SignTextUp( uint8_t x, uint8_t y, uint8_t z, const char * line1, const char * line2 );
 
 //Update a block at a given x, y, z (good for 0..255 in each dimension)
-void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint8_t bt, uint8_t meta );
+void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint16_t blockid );
 
 //Used for sending a position triplet.
 void InternalSendPosition (uint8_t x, uint8_t y, uint8_t z );

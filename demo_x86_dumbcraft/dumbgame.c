@@ -62,17 +62,12 @@ void DoCustomPreloadStep( )
 	struct Player * p = &Players[playerid];
 
 //	printf( "Custom preload.\n" );
-	SblockInternal( 16, 64, 16, 89, 0 );
+//	SblockInternal( 16, 64, 16, 89 + 0 );
 
-	SblockInternal( 3, 64, 2, 63, 12 ); //create sign
-
+	SblockInternal( 3, 64, 2, BLOCK_OAK_SIGN_BASE_ID ); //create sign
 	SignTextUp( 3, 64, 2, "Trigger", "<><" );
-
-	SblockInternal( 3, 64, 1, 63, 12 ); //create sign
-
-	StartSend();
+	SblockInternal( 3, 64, 1, BLOCK_OAK_SIGN_BASE_ID ); //create sign
 	SignTextUp( 3, 64, 1, "Latch", "<><" );
-
 
 	p->custom_preload_step = 0;
 
@@ -116,16 +111,22 @@ void PlayerChangeSlot( uint8_t slotno )
 void GameTick()
 {
 	static int frame;
-	//Need to constantly send updates otherwise blocks won't change.
-	SblockInternal( 1, 96, 1, 0+((frame++)&1), 0 );
+	frame++;
 
 	if( didflip )
 	{
-		EntityUpdatePos( 3, rand()%512, 64*32, rand()%512, 0, 0 );
+		EntityUpdatePos( 3, rand()%512, 32*64, rand()%512, rand(), rand() );
+
 
 		StartSend();
-		Sbyte( 0x46 );
-		Svarint( 20 ); //Sound effect #
+		Sbyte( 0x4F ); //1.5.2 Update day time.
+		Slong( 0 );
+		Slong( regaddr_get * 100 );
+		DoneSend();
+
+		StartSend();
+		Sbyte( 0x52 ); //1.5.2 Sound Effect
+		Svarint( 379 ); //Sound effect #
 		Svarint( 0 ); //Category #
 		Sint( (uint16_t)(flipx<<3) );
 		Sint( (uint16_t)(flipy<<3) );
@@ -184,45 +185,45 @@ void PlayerUpdate( )
 		hasset_value--;
 	}
 
-	SblockInternal( 4, 64, 2, 69, hasset_value?6:14 );
-	SblockInternal( 4, 64, 1, 69, latch_setting_value?6:14 );
+	SblockInternal( 4, 64, 2, BLOCK_LEVER_BASE_ID + hasset_value );
+	SblockInternal( 4, 64, 1, BLOCK_LEVER_BASE_ID + latch_setting_value );
 
 	switch( p->update_number & 7 )
 	{
 	case 0:
-		SblockInternal( 3, 64, 3, 68, 2 ); //create sign
+		SblockInternal( 3, 64, 3, BLOCK_OAK_SIGN_BASE_ID ); //create sign
 		SignUp( 3, 64, 3, "Addr", regaddr_set );
 		for( i = 0; i < 8; i++ )
 		{
-			SblockInternal( 4, 64, i+4, 69, ((regaddr_set)&(1<<i))?17:9 );
-			SblockInternal( 3, 64, i+4, 35, ((regaddr_set)&(1<<i))?0:15 );
+			SblockInternal( 4, 64, i+4, BLOCK_LEVER_BASE_ID + (((regaddr_set)&(1<<i))?0:1) );
+			SblockInternal( 3, 64, i+4, BLOCK_WOOL_BASE_ID + (((regaddr_set)&(1<<i))?0:1) );
 		}
 		break;
 	case 1:
-		SblockInternal( 6, 64, 3, 68, 2 ); //create sign
+		SblockInternal( 6, 64, 3, BLOCK_OAK_SIGN_BASE_ID ); //create sign
 		SignUp( 6, 64, 3, "Value", regval_set );
 		for( i = 0; i < 8; i++ )
 		{
-			SblockInternal( 7, 64, i+4, 69, ((regval_set)&(1<<i))?17:9 );
-			SblockInternal( 6, 64, i+4, 35, ((regval_set)&(1<<i))?0:15 );
+			SblockInternal( 7, 64, i+4, BLOCK_LEVER_BASE_ID + (((regval_set)&(1<<i))?0:1) );
+			SblockInternal( 6, 64, i+4, BLOCK_WOOL_BASE_ID + (((regval_set)&(1<<i))?0:1) );
 		}
 		break;
 	case 2:
-		SblockInternal( 9, 64, 3, 68, 2 ); //create sign
+		SblockInternal( 9, 64, 3, BLOCK_OAK_SIGN_BASE_ID ); //create sign
 		SignUp( 9, 64, 3, "Read", regaddr_get );
 		for( i = 0; i < 8; i++ )
 		{
-			SblockInternal( 10, 64, i+4, 69, ((regaddr_get)&(1<<i))?17:9 );
-			SblockInternal( 9, 64, i+4, 35, ((regaddr_get)&(1<<i))?0:15 );
+			SblockInternal( 10, 64, i+4, BLOCK_LEVER_BASE_ID + (((regaddr_get)&(1<<i))?0:1) );
+			SblockInternal( 9, 64, i+4, BLOCK_WOOL_BASE_ID + (((regaddr_get)&(1<<i))?0:1) );
 		}
 		break;
 	case 3:
 	{
-		SblockInternal( 12, 64, 3, 68, 2 ); //create sign
+		SblockInternal( 12, 64, 3, BLOCK_OAK_SIGN_BASE_ID ); //create sign
 		SignUp( 12, 64, 3, "Read Value", regval_get );
 		for( i = 0; i < 8; i++ )
 		{
-			SblockInternal( 12, 64, i+4, 35, ((regval_get)&(1<<i))?0:15 );
+			SblockInternal( 12, 64, i+4, BLOCK_WOOL_BASE_ID + ((regval_get)&(1<<i))?0:1 );
 		}
 		break;
 	}
