@@ -12,6 +12,29 @@
 #define BLOCK_LEVER_BASE_ID 3781
 #define BLOCK_OAK_SIGN_BASE_ID 3734
 
+#define SLOT_WOOL_BASE 82
+#define SLOT_GLASS 64
+#define SLOT_TORCH 146
+#define SLOT_SNOWBALL 601
+
+#define WOOL_OFFSET_WHITE 0
+#define WOOL_OFFSET_ORANGE 1
+#define WOOL_OFFSET_PURPLE 2
+#define WOOL_OFFSET_CYAN 3
+#define WOOL_OFFSET_YELLOW 4
+#define WOOL_OFFSET_GREEN 5
+#define WOOL_OFFSET_PINK 6
+#define WOOL_OFFSET_BLACK 7
+#define WOOL_OFFSET_GREY 8
+#define WOOL_OFFSET_TEAL 9
+#define WOOL_OFFSET_VIOLET 10
+#define WOOL_OFFSET_NAVY 11
+#define WOOL_OFFSET_BROWN 12
+#define WOOL_OFFSET_POOP 13
+#define WOOL_OFFSET_RED 14
+#define WOOL_OFFSET_DARKBLACK 15
+
+
 #define PLAYER_EID_BASE 0x20
 #define PLAYER_LOGIN_EID_BASE 0x40
 #define MAX_CHATLEN 100
@@ -55,6 +78,9 @@ void DFDEC StartupBroadcast(); //Set up broadcast output.
 void DFDEC DoneBroadcast(); //Done with broadcast mode.
 void DFDEC UpdatePlayerSpeed( uint8_t speed );  //before shifting is done by FIXEDPOINT
 void DFDEC PlayerChangeSlot( uint8_t slotno );
+
+//Used if NEED_PLAYER_BLOCK_ACTION is defined.
+//Will notify us if a player is destroying/has destroyed a block.
 void DFDEC PlayerBlockAction( uint8_t status, uint8_t x, uint8_t y, uint8_t z, uint8_t face );
 
 //Game section
@@ -143,7 +169,13 @@ void DFDEC UpdatePlayerSpeed( uint8_t speed );
 uint8_t DFDEC ClientHandleChat( char * chat, uint8_t chatlen ); 
 void DFDEC PlayerUpdate( );
 void DFDEC GameTick();
+
+//Triggered if the player right-clicks on a cell (you need NEED_PLAYER_CLICK defined for this)
 void DFDEC PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir );
+extern const int8_t dir_offsets[6][3];
+
+//You also need NEED_PLAYER_CLICK for this - but used when a player just right-clicks with an inventory item that doesn't place.
+void DFDEC PlayerUse( uint8_t hand );
 void DFDEC PlayerTickUpdate(  );
 void DFDEC DoCustomPreloadStep(  );
 void DFDEC InitDumbgame();

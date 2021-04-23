@@ -52,6 +52,8 @@ uint8_t latch_setting_value;
 uint8_t didflip = 1;
 uint8_t flipx, flipy, flipz;
 
+int GOFFSET = 0;
+
 void InitDumbgame()
 {
 	//no code.
@@ -79,6 +81,22 @@ void DoCustomPreloadStep( )
 	p->stance = p->y + (1<<FIXEDPOINT);
 	p->z = (1<<FIXEDPOINT)/2;
 	p->need_to_send_lookupdate = 1;
+
+	int slot = 0;
+	static const uint16_t startslots[] = { 82, 83, 84, 85, 86, 87, 64, 146, 601 };
+	for( slot = 0; slot < 9; slot++ )
+	{
+		StartSend();
+		Sbyte( 0x17 ); //Update slot 1.15.2
+		Sbyte( 0 ); //Player inventory
+		Sshort( 36+slot ); //Slots 36-44 are in-hand. 0-4 are crafting.
+		Sbyte( 0x1 ); //Present
+		Svarint( startslots[slot] ); //Block id (White wool is 82)
+		Sbyte( 100 ); //Item count
+		Sbyte( 0 ); //No NBT
+		DoneSend();
+	}
+
 }
 
 void PlayerTickUpdate( )
@@ -102,16 +120,31 @@ void PlayerTickUpdate( )
 
 void PlayerBlockAction( uint8_t status, uint8_t x, uint8_t y, uint8_t z, uint8_t face )
 {
+//	printf( "Player Block Action %d %d %d %d\n", status, x, y, z, face );
 }
 
 void PlayerChangeSlot( uint8_t slotno )
 {
+//	printf( "Slot no change: %d\n", slotno );
 }
 
 void GameTick()
 {
 	static int frame;
 	frame++;
+
+#if 0
+	//Update hand items from GOFFSET
+		StartSend();
+		Sbyte( 0x17 ); //Update slot 1.15.2
+		Sbyte( 0 ); //Player inventory
+		Sshort( (frame%10)+36 ); //Slots 36-44 are in-hand. 0-4 are crafting.
+		Sbyte( 0x1 ); //Present
+		Svarint( (frame%10)+GOFFSET*10 ); //Block id (White wool is 82)
+		Sbyte( 100 ); //Item count
+		Sbyte( 0 ); //No NBT
+		DoneSend();
+#endif
 
 	if( didflip )
 	{
@@ -139,19 +172,25 @@ void GameTick()
 	}
 }
 
+void PlayerUse( uint8_t hand )
+{
+	//No code.
+}
+
 void PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir )
 {
 	if( z == 2 && x == 4 )
 	{
 		hasset_value = 10;
-		didflip = 2;		
+		didflip = 2;	
+		GOFFSET--;
 	}
 	else if( z == 1 && x == 4 )
 	{
 
 		latch_setting_value = !latch_setting_value;
 		didflip = 2;
-		
+		GOFFSET++;
 	}
 	else if( z >= 4 && z < 12 )
 	{
@@ -169,6 +208,14 @@ void PlayerClick( uint8_t x, uint8_t y, uint8_t z, uint8_t dir )
 		flipx = x;
 		flipy = y;
 		flipz = z;
+	}
+	else
+	{
+		const int8_t * dor = dir_offsets[dir];
+		x += dor[0];
+		y += dor[1];
+		z += dor[2];
+		//printf( "Block place %d %d %d %d\n", x, y, z, dir );
 	}
 }
 
@@ -191,12 +238,13 @@ void PlayerUpdate( )
 	switch( p->update_number & 7 )
 	{
 	case 0:
+		SignUp( 3, 64, 2, "GO", GOFFSET );
 		SblockInternal( 3, 64, 3, BLOCK_OAK_SIGN_BASE_ID ); //create sign
 		SignUp( 3, 64, 3, "Addr", regaddr_set );
 		for( i = 0; i < 8; i++ )
 		{
 			SblockInternal( 4, 64, i+4, BLOCK_LEVER_BASE_ID + (((regaddr_set)&(1<<i))?0:1) );
-			SblockInternal( 3, 64, i+4, BLOCK_WOOL_BASE_ID + (((regaddr_set)&(1<<i))?0:1) );
+			SblockInternal( 3, 64, i+4, BLOCK_WOOL_BASE_ID + (((regaddr_set)&(1<<i))?WOOL_OFFSET_WHITE:WOOL_OFFSET_DARKBLACK) );
 		}
 		break;
 	case 1:
@@ -205,7 +253,7 @@ void PlayerUpdate( )
 		for( i = 0; i < 8; i++ )
 		{
 			SblockInternal( 7, 64, i+4, BLOCK_LEVER_BASE_ID + (((regval_set)&(1<<i))?0:1) );
-			SblockInternal( 6, 64, i+4, BLOCK_WOOL_BASE_ID + (((regval_set)&(1<<i))?0:1) );
+			SblockInternal( 6, 64, i+4, BLOCK_WOOL_BASE_ID + (((regval_set)&(1<<i))?WOOL_OFFSET_WHITE:WOOL_OFFSET_DARKBLACK) );
 		}
 		break;
 	case 2:
@@ -214,7 +262,7 @@ void PlayerUpdate( )
 		for( i = 0; i < 8; i++ )
 		{
 			SblockInternal( 10, 64, i+4, BLOCK_LEVER_BASE_ID + (((regaddr_get)&(1<<i))?0:1) );
-			SblockInternal( 9, 64, i+4, BLOCK_WOOL_BASE_ID + (((regaddr_get)&(1<<i))?0:1) );
+			SblockInternal( 9, 64, i+4, BLOCK_WOOL_BASE_ID + (((regaddr_get)&(1<<i))?WOOL_OFFSET_WHITE:WOOL_OFFSET_DARKBLACK) );
 		}
 		break;
 	case 3:

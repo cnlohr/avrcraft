@@ -50,6 +50,8 @@ const char pingjson2[] PROGMEM = "\", \"players\":{\"max\":";
 const char pingjson3[] PROGMEM = ",\"online\":";
 const char pingjson4[] PROGMEM = "},\"version\":{\"name\":\""LONG_PROTO_VERSION"\",\"protocol\":"PROTO_VERSION_STR"}}";
 
+const int8_t dir_offsets[6][3] = { { 0, -1, 0 }, { 0, 1, 0 }, { 0, 0, -1 }, { 0, 0, 1 }, { -1, 0, 0 }, { 1, 0, 0 } };
+
 uint8_t dumbcraft_playercount;
 
 /////////////////////////////////////////BIZARRE UTILITIES/////////////////////
@@ -1163,18 +1165,14 @@ void GotData( uint8_t playerno )
 			if( hand == 0 ) PlayerClick( x, y, z, face );
 			break;
 		}
-		case 0x2D: //1.15.2	//Block placement / right-click, used for levers.
+		case 0x2D: //1.15.2	//"Use Item" / Used when right-clicking an action up in the sky.
 		{
-			/*uint8_t hand =*/ Rvarint(); //action player is taking against block
-			uint8_t x, y, z;
-			Rposition( &x, &y, &z );
-			uint8_t dir = dcrbyte();
-			PlayerClick( x, y, z, dir );
+			PlayerUse( Rvarint() ); //action player is taking against block
 			break;
 		}
 #endif
 #ifdef NEED_SLOT_CHANGE
-		case 0x17:  //Held item change
+		case 0x23:  //1.15.2 Held item change
 			PlayerChangeSlot( Rshort() );
 			break;
 #endif

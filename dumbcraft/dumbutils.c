@@ -71,13 +71,11 @@ void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z, uint8
 //Update a sign at a specific location with a string and a numerical value.
 void SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val )
 {
-	char stmp1[5];
-	char stmp2[5];
-
-	Uint8To10Str( stmp1, val );
-	Uint8To16Str( stmp2+2, val );
-	stmp2[0] = '0'; stmp2[1] = 'x';
-	SignTextUp( x, y, z, stmp1, stmp2 );
+	char stmp[16];
+	Uint8To10Str( stmp+5, val );
+	Uint8To16Str( stmp+2, val );
+	stmp[0] = '0'; stmp[1] = 'x'; stmp[4] = ':';
+	SignTextUp( x, y, z, st, stmp );
 }
 
 void InternalSendPosition (uint8_t x, uint8_t y, uint8_t z )
