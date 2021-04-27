@@ -6,7 +6,7 @@
 void UpdateSlot( uint8_t window, uint8_t slot, uint8_t count, uint16_t id, uint8_t damage )
 {
 	StartSend();
-	Sbyte( 0x17 );  //Updated (But rest of packet might be wrong)
+	Sbyte( 0x15 );  //1.16.5 "Set Slot" (But rest of packet might be wrong)
 	Sbyte( window ); 
 	Sshort( slot );
 
@@ -22,7 +22,7 @@ void GPChat( const char * text )
 {
 	uint16_t chatlen = strlen( text );
 	StartSend();
-	Sbyte( 0x0F ); //UPDATED
+	Sbyte( 0x0E ); //1.16.5 Chat Message (clientbound)
 	Svarint( chatlen + 11 );
 	Sbuffer( (const uint8_t*)"{\"text\":\"", 9 );
 	Sbuffer( (const uint8_t*)text, chatlen );
@@ -36,11 +36,9 @@ void GPChat( const char * text )
 void SpawnEntity( uint16_t eid, uint8_t type, uint16_t x, uint16_t y, uint16_t z )
 {
 	StartSend();
-	Sbyte( 0x03 );  //1.15.2 Spawn Living Entity
+	Sbyte( 0x02 );  //1.16.5 Spawn Living Entity
 	Svarint( eid );
-	//Suuid( eid );
-	Slong( 0 ); Slong( eid );
-
+	Sencuuid( eid );
 	Svarint( type );
 	Sdouble( x );
 	Sdouble( y );
@@ -57,14 +55,14 @@ void SpawnEntity( uint16_t eid, uint8_t type, uint16_t x, uint16_t y, uint16_t z
 void EntityUpdatePos( uint16_t entity, uint16_t x, uint16_t y, uint16_t z, uint8_t yaw, uint8_t pitch )
 {
 	StartSend();
-	Sbyte( 0x57 ); //1.15.2 Entity Position and Rotation
+	Sbyte( 0x28 ); //1.16.5 Entity Position and Rotation
 	Svarint( entity );
 	Sdouble( x );
 	Sdouble( y );
 	Sdouble( z );
 	Sbyte( yaw );
 	Sbyte( pitch );
-	Svarint( 1 );
+	Svarint( 1 ); //on ground
 	DoneSend();
 }
 
@@ -131,7 +129,7 @@ void SignTextUp( uint8_t x, uint8_t y, uint8_t z, const char * line1, const char
 	//Big thanks in this section goes to Na "Sodium" from #mcdevs on freenode IRC.
 
 	StartSend();
-	Sbyte( 0x0a ); //[1.15.2]  (Block entity data)
+	Sbyte( 0x09 ); //[1.16.5]  (Block entity data)
 	InternalSendPosition( x, y, z );
 	Sbyte( 9 ); // "Set text on sign"
 
@@ -166,7 +164,7 @@ void SignTextUp( uint8_t x, uint8_t y, uint8_t z, const char * line1, const char
 void SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint16_t blockid )
 {
 	StartSend();
-	Sbyte(0x0C);  //1.15.2  "Block Change"
+	Sbyte(0x0B);  //1.16.5  "Block Change"
 	InternalSendPosition( x, y, z );
 	Svarint( blockid ); //block type
 	DoneSend();

@@ -1,11 +1,11 @@
-//Copyright 2012 <>< Charles Lohr, under the MIT-x11 or NewBSD license.  You choose.
+//Copyright 2012-2021 <>< Charles Lohr, under the MIT-x11 or NewBSD license.  You choose.
 
 #ifndef _DUMBCRAFT_H
 #define _DUMBCRAFT_H
 
-#define PROTO_VERSION 578
-#define PROTO_VERSION_STR "578"
-#define LONG_PROTO_VERSION "1.15.2"
+#define PROTO_VERSION 754
+#define PROTO_VERSION_STR "754"
+#define LONG_PROTO_VERSION "1.16.5"
 
 #define BLOCK_GRASS_ID 9
 #define BLOCK_WOOL_BASE_ID 1383
@@ -160,6 +160,7 @@ void DFDEC Sdouble( int16_t i );
 void DFDEC Slong( uint32_t o );
 void DFDEC Sfloat( int16_t i );
 void DFDEC Suuid( uint16_t uuidid );
+void DFDEC Sencuuid( uint16_t uuidid ); //send as 16-byte 2-longs.
 void DFDEC SignUp( uint8_t x, uint8_t y, uint8_t z, const char* st, uint8_t val );
 void DFDEC SblockInternal( uint8_t x, uint8_t y, uint8_t z, uint16_t blockid );
 void DFDEC SSpawnPlayer( uint8_t pid );

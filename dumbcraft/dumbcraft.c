@@ -336,6 +336,13 @@ void Suuid( uint16_t uuid )
 	Sstring( stmp, -1 );  //UUID (Yuck) 00000000-0000-0000-0000-000000000000
 }
 
+void Sencuuid( uint16_t uuidid )
+{
+	//send as 16-byte 2-longs.
+	Slong( 0 );
+	Slong( uuidid );
+}
+
 //Send a string, -1 for length automatically sends a null-terminated string.
 void Sstring( const char * str, uint8_t len )
 {
@@ -402,16 +409,12 @@ void SSpawnPlayer( uint8_t pid )
 
 	//Thanks to @Tachyon_ from #mcdevs for helping with this.
 
-#if 1
-	//printf( "Spawn Player: %d %s\n", pid+PLAYER_EID_BASE, p->playername ); //XXX TODO This does not seem to be called correctly.
-
 	//Player Info
 	StartSend();
-	Sbyte( 0x34 ); //1.15.2
+	Sbyte( 0x32 ); //1.16.5 Player Info
 	Svarint( 0 ); //Add player
 	Svarint( 1 ); //1 player
-	Svarint( (uint8_t)(pid + PLAYER_EID_BASE) );
-//	Suuid( pid + PLAYER_EID_BASE );
+	Sencuuid( pid + PLAYER_EID_BASE );
 	Sstring( (char*)p->playername, -1 );
 	Svarint( 0 ); //No props
 	Svarint( GAMEMODE ); //Game mode
@@ -420,19 +423,16 @@ void SSpawnPlayer( uint8_t pid )
 	DoneSend();
 
 	StartSend();
-	Sbyte( 0x57 );  //1.15.2 Entity teleport
-	//Suuid( pid + PLAYER_EID_BASE );
+	Sbyte( 0x56 );  //1.16.5 Entity teleport
 	Svarint( (uint8_t)(pid + PLAYER_EID_BASE) );
 	Sdouble( p->x );
 	Sdouble( p->y );
 	Sdouble( p->z );
 	Sbyte( p->nyaw );
 	Sbyte( p->npitch );
-	Sbyte( 0xff );
+	Sbyte( 0x01 ); //On Ground
 	DoneSend();
-#else
-	SpawnEntity( pid + PLAYER_EID_BASE, pid + PLAYER_EID_BASE, 27, p->x, p->y, p->z );
-#endif
+
 	//Will set location and close loading screen.
 	//EntityUpdatePos( pid + PLAYER_EID_BASE, p->x, p->y, p->z, p->nyaw, p->npitch );
 }
@@ -440,7 +440,7 @@ void SSpawnPlayer( uint8_t pid )
 void UpdatePlayerSpeed( uint8_t speed )
 {
 	StartSend();
-	Sbyte(0x59); //[1.15.2]
+	Sbyte(0x58); //1.16.5 Entity Properties
 	Svarint( playerid );
 	Sint( 1 );
 	Sstring( "generic.movementSpeed", -1 );	
@@ -592,9 +592,9 @@ void UpdateServer()
 				if( chk == 16 || cx < 0 || cz < 0 )
 				{
 					//StartSend();
-					//Sbyte( 0x41 ); //1.15.2 Update View Position --> TODO: Needed whenever crossing block boundaries
+					//Sbyte( 0x41 ); //1-15-2 Update View Position --> TODO: Needed whenever crossing block boundaries
 					//Svarint( 0 );
-					//Svarint( 0 );
+					//Svarint( 0 );  //Was not working in 1-15-2
 					//DoneSend();
 
 					int nnc = p->next_chunk_to_load;
@@ -724,7 +724,7 @@ void UpdateServer()
 		if( p->need_to_send_lookupdate )
 		{
 			StartSend();
-			Sbyte(0x36); //1.15.2 //Player Position And Look (clientbound)
+			Sbyte(0x34); //1.16.5 //Player Position And Look (clientbound)
 			Sdouble( p->x );
 			Sdouble( p->y );
 			Sdouble( p->z );
@@ -744,16 +744,82 @@ void UpdateServer()
 
 			//Newer versions need not send this, maybe?
 			StartSend();
-			Sbyte( 0x26 );  //Updated (Join Game)
+			Sbyte( 0x24 );  //1.16.5 (Join Game)
 			Sint( (uint8_t)(playerid + PLAYER_LOGIN_EID_BASE) );
+			Sbyte( 0 ); // Is hardcore
 			Sbyte( GAMEMODE ); //creative
-			Sint( WORLDTYPE ); //overworld
+			Sbyte( 255 ); // Previous gamemode
+			Sbyte( 1 ); //World count
+			Sstring( "minecraft:overworld", 19 ); // World name
+
+			//Dimension Codec
+			//	minecraft:dimension_type
+			//	minecraft:worldgen/biome
+
+			//TODO:
+			//{
+			//	"minecraft:dimension_type": {
+			//		type: "minecraft:dimension_type",
+			//		value: [
+			//			{
+			//			    name: "minecraft:overworld",
+			//			    id: 0,
+			//			    element: {
+			//			        piglin_safe: 0b,
+			//			        natural: 1b,
+			//			        ambient_light: 0.0f,
+			//			        has_skylight: 1b,
+			//			        bed_works: 1b,
+			//			        effects: "minecraft:overworld",
+			//				},
+			//			},
+			//		],
+			//	},
+			//	"minecraft:worldgen/biome": {
+			//		type: "minecraft:worldgen/biome",
+			//		value: [
+			//			{
+			//			    name: "minecraft:ocean",
+			//			    id: 0,
+			//			    element: {
+			//			        precipitation: "rain",
+			//			        effects: {
+			//			            sky_color: 8103167,
+			//			            water_fog_color: 329011,
+			//			            fog_color: 12638463,
+			//			            water_color: 4159204,
+			//			            mood_sound: {
+			//			                tick_delay: 6000,
+			//			                offset: 2.0d,
+			//			                sound: "minecraft:ambient.cave",
+			//			                block_search_extent: 8
+			//			            }
+			//			        },
+			//			        depth: -1.0f,
+			//			        temperature: 0.5f,
+			//			        scale: 0.1f,
+			//			        downfall: 0.5f,
+			//			        category: "ocean"
+			//			    }
+			//			},
+			//		],
+			//	}
+			//}
+
+			//Also need dimension
+
+			Sbyte( 0x00 );
+			Sbyte( 0x00 );
+
+			Sstring( "minecraft:overworld", 19 ); // World name
 			Slong( 0xdeadbeef ); //Hashed seed.
 			Sbyte( MAX_PLAYERS );
-			Sstring( "flat", 4 );
 			Svarint( 8 ); //render distance in chunks.
 			Sbyte( 0 ); //Reduce debug info?
 			Sbyte( 0 );	//Immediate respawn.
+
+			Sbyte( 0 );	//hard coded debug world.
+			Sbyte( 0 );	//is flat
 			DoneSend();
 
 			p->need_to_spawn = 0;
@@ -787,15 +853,15 @@ void UpdateServer()
 		if( p->need_to_login )
 		{
 			StartSend();
-			Sbyte( 0x03 ); //1.15.2 //Set compression threshold
+			Sbyte( 0x03 ); //1.16.5 //Set compression threshold
 			Svarint( 8192 ); //Arbitrary, so we only hit it when we send chunks.
 			DoneSend();
 
 			p->set_compression = 1;
 
 			StartSend();
-			Sbyte( 0x02 ); //1.15.2 //Login success
-			Suuid( playerid + PLAYER_LOGIN_EID_BASE );
+			Sbyte( 0x02 ); //1.16.5 //Login success
+			Sencuuid( playerid + PLAYER_LOGIN_EID_BASE );
 			p->need_to_login = 0;
 			Sstring( (const char*)p->playername, -1 );
 			DoneSend();
@@ -809,7 +875,7 @@ void UpdateServer()
 		{
 
 			StartSend();
-			Sbyte( 0x21 );
+			Sbyte( 0x1f ); //1.16.5 Keepalive
 			Slong( dumbcraft_tick );
 			DoneSend();
 			p->need_to_send_keepalive = 0;
@@ -881,7 +947,7 @@ void TickServer()
 			//if( diffx < -127 || diffx > 127 || diffy < -127 || diffy > 127 || diffz < -127 || diffz > 127 )
 			{
 				StartSend();
-				Sbyte( 0x57 );  //1.15.2 (Entity Teleport)
+				Sbyte( 0x56 );  //1.16.5 (Entity Teleport)
 				Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 				Sdouble( p->x );
 				Sdouble( p->y );
@@ -907,7 +973,7 @@ void TickServer()
 			}*/
 
 			StartSend();
-			Sbyte( 0x3c ); //1.15.2 "Entity Head Look"
+			Sbyte( 0x3a ); //1.16.5 "Entity Head Look"
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
@@ -923,7 +989,7 @@ void TickServer()
 
 			StartSend();
 			/*
-			//XXX Was this dropped by 1.15.2
+			//XXX Was this dropped by 1-15-2
 			Sbyte( 0x27 ); //Entity Look
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
@@ -933,7 +999,7 @@ void TickServer()
 			*/
 
 			StartSend();
-			Sbyte( 0x3C ); //1.15.2 (look at with head)
+			Sbyte( 0x3A ); //1.16.5 (Entity Head Look)
 			Svarint( (uint8_t)(playerid + PLAYER_EID_BASE) );
 			Sbyte( p->nyaw );
 			DoneSend();
@@ -1086,14 +1152,14 @@ void GotData( uint8_t playerno )
 		//	break;
 		//case 0x14: //Entity Action
 		//	break;
-		case 0x0F: //1.15.2 //Keepalive
+		case 0x10: //1.16.5 //Keep alive
 			//p->need_to_send_keepalive = 1;
 			Rshort();
 			//keep alive?
 			//p->keepalive_id = Rint();
 			break;
 
-		case 0x03: //1.15.2 Handle chat
+		case 0x03: //1.16.5 Handle chat
 			i16 = Rvarint();
 
 			chatlen = ((i16)<MAX_CHATLEN)?i16:MAX_CHATLEN;
@@ -1102,40 +1168,40 @@ void GotData( uint8_t playerno )
 
 			while( i16-- )
 			{
+				char c = dcrbyte();
 				if( i8 < chatlen )
 				{
-					chat[i8++] = dcrbyte();
+					chat[i8++] = c;
 				}
 			}
 			//chatlen++;
 			chat[i8] = 0;
 			break;
 
-		case 0x14: //1.15.2 Player Movement //On-ground, client sends this to an annyoing degree.
+		case 0x15: //1.16.5 Player Movement //On-ground, client sends this to an annyoing degree.
 			p->onground = dcrbyte();
 			break;
 
-		case 0x11: //1.15.2 Player position
+		case 0x12: //1.16.5 Player position
 			p->x = Rdouble();
 			p->y = Rdouble();
-			//p->stance = Rdouble();
 			p->z = Rdouble();
 			p->onground = dcrbyte();
 			break;
 
-		case 0x12: //1.15.2 //Player Position
+		case 0x13: //1.16.5 //Player Position And Rotation
 			p->x = Rdouble();
 			p->y = Rdouble();
 			//p->stance = Rdouble();
 			p->z = Rdouble();
-		case 0x13: //1.15.2  Player Rotation
+		case 0x14: //1.16.5  Player Rotation
 			p->yaw = Rfloat();
 			p->pitch = Rfloat();
 			p->nyaw = p->yaw/45;    //XXX TODO PROBABLY SLOW seems to add <256 bytes, though.  Is there a better way?
 			p->npitch = p->pitch/45;//XXX TODO PROBABLY SLOW
 			p->onground = dcrbyte();
 			break;
-		case 0x1A: //1.15.2 player digging.
+		case 0x1B: //1.16.5 player digging.
 		{
 			uint8_t status = Rvarint(); //action player is taking against block
 			uint8_t x, y, z;
@@ -1153,30 +1219,31 @@ void GotData( uint8_t playerno )
 		//	Players arms swinging.
 		//}
 #ifdef NEED_PLAYER_CLICK
-		case 0x2C: //1.15.2 //Player Block Placement
+		case 0x2E: //1.16.5 //Player Block Placement
 		{
 			uint8_t hand = Rvarint(); //action player is taking against block
 			uint8_t x, y, z;
 			Rposition( &x, &y, &z );
 			uint8_t face = Rvarint(); //which face?
+
 			//Ignore cursor xyz & insideblock
-			//Rvarint(); //action player is taking against block
-			//printf( "%d %d\n", hand, face );
+			Rfloat(); Rfloat(); Rfloat(); dcrbyte();
+
 			if( hand == 0 ) PlayerClick( x, y, z, face );
 			break;
 		}
-		case 0x2D: //1.15.2	//"Use Item" / Used when right-clicking an action up in the sky.
+		case 0x2F: //1.16.5	//"Use Item" / Used when right-clicking an action up in the sky.
 		{
 			PlayerUse( Rvarint() ); //action player is taking against block
 			break;
 		}
 #endif
 #ifdef NEED_SLOT_CHANGE
-		case 0x23:  //1.15.2 Held item change
+		case 0x3F:  //1.16.5 Held item change
 			PlayerChangeSlot( Rshort() );
 			break;
 #endif
-		case 0x04:  //1.15.2 Client Status
+		case 0x04:  //1.16.5 Client Status
 			switch( dcrbyte() )
 			{
 			case 0x00: //perform respawn.
@@ -1188,7 +1255,7 @@ void GotData( uint8_t playerno )
 			}
 			break;
 
-		case 0x0B://1.15.2 plugin message
+		case 0x0B://1.16.5 plugin message
 			Rstring( 0,0 );
 			Rdump( Rshort() );
 			break;
@@ -1216,7 +1283,7 @@ void GotData( uint8_t playerno )
 		{
 			StartupBroadcast();			
 			StartSend();
-			Sbyte( 0x0F ); //Updated
+			Sbyte( 0x0E ); //1.16.5 Chat Message (clientbound)
 			Svarint( chatlen + pll + 2 + 10 + 2 );
 			Sbuffer( (const uint8_t*)"{\"text\":\"<", 10 );
 			Sbuffer( p->playername, pll );
